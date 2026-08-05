@@ -1,0 +1,195 @@
+"""Check the workshop steps for the ways they rot. Maintainers only.
+
+Nine near-identical copies of main.py drift quietly. The failure that actually
+embarrasses you live is a step whose answer key -- the next folder -- no longer
+matches what its own TODOs asked for. This catches the mechanical half of that.
+
+Run it after editing any step:
+
+    uv run scripts/verify_steps.py
+
+Checks, in order of how badly each one fails a room:
+
+  1. Every step compiles.
+  2. No "TODO (Step N.x)" marker survives into folder N+1. A marker that leaks
+     means the answer key is not actually finished.
+  3. Every step folder has a LAB.md, and 99-final has a README.md.
+  4. Each step's growth over its predecessor is plausible -- a step that got
+     *smaller* almost always means an edit landed in the wrong folder.
+  5. ruff passes on all of them, using the config in pyproject.toml.
+
+What it deliberately does not check: whether the code in step N+1 is a correct
+implementation of step N's TODOs. Nothing but reading it will tell you that.
+"""
+
+import re
+import subprocess
+import sys
+from itertools import pairwise
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+STEPS = REPO / "steps"
+
+# "TODO (Step 8.1)" and "TODO (Step 5.1)" alike.
+MARKER = re.compile(r"TODO \(Step (\d+)(?:\.\w+)?\)")
+
+# 01 is a standalone environment checker, not part of the agent program, so it
+# is exempt from the growth check against its "predecessor".
+STANDALONE = {"01-setup"}
+
+
+def step_dirs() -> list[Path]:
+    """Return every step folder, in workshop order.
+
+    Returns:
+        Sorted list of directories under steps/ that contain a main.py.
+    """
+    return sorted(d for d in STEPS.iterdir() if d.is_dir() and (d / "main.py").exists())
+
+
+def check_compiles(steps: list[Path]) -> list[str]:
+    """Byte-compile every step's main.py.
+
+    Args:
+        steps: Step folders to check.
+
+    Returns:
+        A list of failure messages, empty when every file compiles.
+    """
+    failures = []
+    for step in steps:
+        result = subprocess.run(
+            [sys.executable, "-m", "py_compile", str(step / "main.py")],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            failures.append(f"{step.name}/main.py does not compile:\n{result.stderr}")
+    return failures
+
+
+def check_marker_leakage(steps: list[Path]) -> list[str]:
+    """Confirm each step's TODO markers are resolved by the following step.
+
+    Args:
+        steps: Step folders, in order.
+
+    Returns:
+        A list of failure messages, empty when no marker leaks forward.
+    """
+    failures = []
+    for step, answer_key in pairwise(steps):
+        own = {m.group(1) for m in MARKER.finditer((step / "main.py").read_text())}
+        leaked = {m.group(1) for m in MARKER.finditer((answer_key / "main.py").read_text())}
+        for number in sorted(own & leaked):
+            failures.append(
+                f"{answer_key.name}/main.py still contains 'TODO (Step {number})' "
+                f"markers that {step.name} asks the attendee to resolve -- "
+                f"the answer key is unfinished.",
+            )
+    return failures
+
+
+def check_docs(steps: list[Path]) -> list[str]:
+    """Confirm every step ships the document an attendee is told to open.
+
+    Args:
+        steps: Step folders to check.
+
+    Returns:
+        A list of failure messages, empty when every doc exists.
+    """
+    failures = []
+    for step in steps:
+        wanted = "README.md" if step.name.startswith("99") else "LAB.md"
+        if not (step / wanted).exists():
+            failures.append(f"{step.name}/ is missing {wanted}")
+    return failures
+
+
+def check_growth(steps: list[Path]) -> list[str]:
+    """Flag any step whose main.py shrank relative to the step before it.
+
+    Each step adds to its predecessor, so line counts should climb. A drop
+    almost always means an edit landed in the wrong folder.
+
+    Args:
+        steps: Step folders, in order.
+
+    Returns:
+        A list of failure messages, empty when every step grew or held steady.
+    """
+    failures = []
+    for previous, step in pairwise(steps):
+        if previous.name in STANDALONE or step.name in STANDALONE:
+            continue
+        before = len((previous / "main.py").read_text().splitlines())
+        after = len((step / "main.py").read_text().splitlines())
+        # Resolving a TODO block usually nets out shorter than the instructions
+        # it replaces, so allow real slack -- this is a tripwire, not a metric.
+        if after < before - 60:
+            failures.append(
+                f"{step.name}/main.py is {before - after} lines shorter than "
+                f"{previous.name}/main.py. Did an edit land in the wrong folder?",
+            )
+    return failures
+
+
+def check_lint() -> list[str]:
+    """Run ruff over the steps and scripts.
+
+    Returns:
+        A list containing ruff's output when it fails, empty when it passes or
+        ruff is unavailable.
+    """
+    try:
+        result = subprocess.run(
+            ["uvx", "ruff", "check", "steps", "scripts"],
+            cwd=REPO,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        print("  (skipped: uvx not found)")
+        return []
+
+    if result.returncode != 0:
+        return [result.stdout or result.stderr]
+    return []
+
+
+def main() -> None:
+    """Run every check and report. Exits non-zero if any check fails."""
+    steps = step_dirs()
+    if not steps:
+        print(f"No step folders found under {STEPS}")
+        sys.exit(1)
+
+    print(f"Checking {len(steps)} steps: {', '.join(s.name for s in steps)}\n")
+
+    failures = []
+    for label, check in (
+        ("compiles", lambda: check_compiles(steps)),
+        ("no leaked TODO markers", lambda: check_marker_leakage(steps)),
+        ("docs present", lambda: check_docs(steps)),
+        ("steps grow", lambda: check_growth(steps)),
+        ("ruff", check_lint),
+    ):
+        print(f"- {label}")
+        found = check()
+        for failure in found:
+            print(f"    FAIL: {failure}")
+        failures.extend(found)
+
+    if failures:
+        print(f"\n{len(failures)} problem(s) found.")
+        sys.exit(1)
+
+    print("\nAll checks passed.")
+
+
+if __name__ == "__main__":
+    main()

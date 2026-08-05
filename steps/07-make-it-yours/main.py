@@ -1,23 +1,19 @@
-"""Bare-minimum Deepgram Voice Agent with live mic input and speaker output.
+"""Step 7 - Make it yours.
 
-Captures audio from the default microphone, streams it to Deepgram's Voice Agent
-WebSocket, and plays the agent's Flux TTS response back through the default speaker.
-Cross-platform: sounddevice ships PortAudio binaries in its wheels for Linux,
-macOS, and Windows, so no system-level audio install is required.
+Runs exactly as Step 6 left it: a tuned, interruptible voice agent.
 
-Speech-to-text runs on Flux, Deepgram's conversational model, which detects turn
-boundaries inside the model. The client does no voice activity detection of its
-own: the agent emits UserStartedSpeaking at start-of-turn and sends the
-transcript to the LLM at end-of-turn. The client's one obligation is prompt
-barge-in -- see the UserStartedSpeaking branch below.
+Everything so far has been plumbing. This step is where the agent becomes
+*yours* -- its job, its personality, its voice, its opening line. There is less
+code here than in any other step and more to play with.
+
+Look for the "TODO (Step 7.x)" blocks below.
 
 Press Ctrl+C to exit.
 """
 
+import os
 import threading
 import time
-import os
-from typing import Union
 
 import sounddevice as sd
 from deepgram import DeepgramClient
@@ -39,7 +35,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-AgentMessage = Union[str, bytes]
+AgentMessage = str | bytes
 
 SAMPLE_RATE = 24000 # Deepgram's recommended sample rate for voice agents. For telephony, 8000 is recommended.
 CHANNELS = 1 # Deepgram's recommended channel count for voice agents. Mono is the most widely supported format across platforms and languages.
@@ -74,13 +70,43 @@ SETTINGS = AgentV1Settings(
             ),
         ),
         think=ThinkSettingsV1(
+            # ---- TODO (Step 7.3): Try a different brain -------------------
+            # gpt-4o-mini is fast and cheap, which matters more than raw
+            # capability when someone is waiting to hear a reply. Try
+            # "gpt-4o" and listen for the extra latency before deciding it is
+            # worth it. temperature controls variability: 0.0 for an agent
+            # that must say the same thing every time, 1.0+ for a chatty one.
+            #
+            # Other providers are available here too (Anthropic, Google, Groq,
+            # AWS Bedrock) via the matching ThinkSettingsV1Provider_* class.
+            # ---------------------------------------------------------------
             provider=ThinkSettingsV1Provider_OpenAi(
                 type="open_ai",
                 model="gpt-4o-mini",
                 temperature=0.7,
             ),
-            # The prompt is prepended to every user turn before sending it to the LLM. It
+            # The prompt is prepended to every user turn before it reaches the
+            # LLM. It is the agent's standing instructions -- personality, job,
+            # and boundaries. Keep it short: every token here is re-sent on
+            # every turn, and long prompts slow the first reply.
+            # ---- TODO (Step 7.1): Give your agent a job -------------------
+            # Replace the prompt below. Two rules that matter more than they
+            # look:
+            #
+            #   1. Tell it that it is *speaking*. LLMs default to writing.
+            #      Without this you get bullet points and asterisks read
+            #      aloud, and it is jarring the first time you hear it:
+            #        "You are speaking out loud, so never use markdown,
+            #         bullet points, or emoji."
+            #
+            #   2. Tell it to be brief. Text-chat length answers feel
+            #      interminable in a conversation.
+            #
+            # Then give it an actual job -- a barista taking an order, a
+            # support agent for a product you know, a dungeon master. Specific
+            # beats generic.
             prompt="You are a helpful AI assistant. Keep your responses brief.",
+            # ---------------------------------------------------------------
         ),
         # Flux TTS is Deepgram's streaming, turn-based voice engine built for
         # voice agents. The "flux-" model prefix routes the agent to the v2
@@ -88,11 +114,28 @@ SETTINGS = AgentV1Settings(
         speak=SpeakSettingsV1(
             provider=SpeakSettingsV1Provider_Deepgram(
                 type="deepgram",
+                # ---- TODO (Step 7.2): Pick a voice ------------------------
+                # Swap flux-alexis-en for another Flux voice. The full list is
+                # at https://developers.deepgram.com/docs/tts-models
+                #
+                # Deliberately misspell one first and run it. You will get a
+                # ">> Agent warning" once you finish TODO 7.4 -- a rejected
+                # voice is non-fatal, and the agent falls back rather than
+                # failing the handshake. Knowing that saves you an hour some
+                # day when an agent sounds wrong and nothing has errored.
+                # -----------------------------------------------------------
                 model="flux-alexis-en",
             ),
         ),
-        # The agent's first utterance, which is sent to the LLM as part of the
+        # The agent's first utterance, spoken as soon as settings are applied.
+        # It is added to the conversation history, so the LLM knows it already
+        # said this and will not repeat itself on the first real turn.
+        # ---- TODO (Step 7.2b): Write a new opening line -------------------
+        # Make it match the job you gave it above. This is the only line the
+        # agent says before it knows anything about the user, so it is doing
+        # all the work of setting expectations.
         greeting="Hello! I'm a Deepgram voice agent. What would you like to talk about?",
+        # -------------------------------------------------------------------
     ),
 )
 
@@ -170,28 +213,28 @@ def main() -> None:
             elif message_type == "AgentAudioDone":
                 print(">> Agent finished speaking")
             elif message_type == "LatencyReport":
-                # One report per turn, arriving right after the reply starts --
-                # printed, it buries the conversation. Uncomment to watch the
-                # cost of the turn-detection knobs above: total_latency is
-                # end-of-utterance to first audio byte. Also carries
+                # One report per turn, arriving right after the reply starts.
+                # total_latency is end-of-utterance to first audio byte -- the
+                # number the turn-detection knobs above move. Also carries
                 # ttt_token_latency, ttt_text_latency, ttt_tool_latency,
                 # ttt_thinking_latency, and tts_latency. Every field is
                 # optional -- absent, not zero, when it doesn't apply.
-                # total = getattr(message, "total_latency", None)
-                # if total is not None:
-                #     print(f">> Latency: {total:.2f}s")
-                pass
+                total = getattr(message, "total_latency", None)
+                if total is not None:
+                    print(f">> Latency: {total:.2f}s")
             elif message_type == "Error":
                 code = getattr(message, "code", "unknown")
                 description = getattr(message, "description", "unknown error")
                 print(f">> Agent error: {code} - {description}")
-            elif message_type == "Warning":
-                # Non-fatal, and the place a rejected listen setting shows up --
-                # a threshold outside its valid range warns here rather than
-                # failing the handshake.
-                code = getattr(message, "code", "unknown")
-                description = getattr(message, "description", "unknown warning")
-                print(f">> Agent warning: {code} - {description}")
+            # ---- TODO (Step 7.4): Surface warnings ------------------------
+            # Add a branch for "Warning", printing .code and .description the
+            # same way the Error branch above does.
+            #
+            # Warnings are where rejected settings show up. A misspelled voice
+            # or a threshold outside its valid range arrives here rather than
+            # failing the handshake -- so without this branch, a bad setting is
+            # silently ignored and you are left wondering why nothing changed.
+            # ---------------------------------------------------------------
             else:
                 print(f">> {message_type}")
 
