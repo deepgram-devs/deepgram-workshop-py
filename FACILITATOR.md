@@ -34,8 +34,6 @@ The single biggest predictor of whether this workshop goes well is how many peop
 >
 > If the check prints anything other than all-OK, reply to this email and we'll sort it out before the day.
 
-**Don't offer the dev container as the default path.** It removes the install, but a container has no microphone or speaker — Codespaces has no audio hardware, and Docker Desktop on macOS and Windows can't pass any through. Attendees who arrive in a Codespace can't hear the agent, which is Steps 3 through 8. Keep it in your pocket for the person whose local Python is genuinely unsalvageable: they can still follow the labs, edit every step, and run Step 2, then pair with a neighbour for the audio steps. Details in [.devcontainer/README.md](.devcontainer/README.md).
-
 ## Run of show
 
 Times assume a 3-hour slot with one break. The **⏸** rows are the sync points marked in each `LAB.md` — hold the room at these.

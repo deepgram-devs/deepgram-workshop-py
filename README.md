@@ -20,12 +20,6 @@ One virtual environment serves every step. You run `uv sync` once.
 
 That last command checks your key, your audio devices, and your microphone before any of it matters. On macOS it also triggers the microphone permission prompt — much better here than mid-conversation later.
 
-### Or use the dev container
-
-A [dev container](.devcontainer/README.md) ships with Python, `uv`, and every dependency already installed — open the repo in a Codespace or run **Dev Containers: Reopen in Container** in VS Code, and paste your key when prompted.
-
-One caveat, and it's a real one: **a container cannot reach your microphone or speaker** unless you're on a Linux host and share them explicitly. Codespaces has no audio hardware at all. The dev container is a good way to read, edit, and lint the workshop, and to run Step 2's handshake — but hearing the agent talk needs `uv` on your own machine, or the Linux audio passthrough described in [.devcontainer/README.md](.devcontainer/README.md).
-
 **Headphones are strongly recommended.** Without them your speaker feeds your microphone and the agent interrupts itself, which is confusing in Step 4 and actively misleading in Step 5.
 
 ## The steps

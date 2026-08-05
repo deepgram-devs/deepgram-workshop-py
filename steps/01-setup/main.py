@@ -35,14 +35,6 @@ load_dotenv()
 # way to tell the two apart.
 IS_WSL = sys.platform == "linux" and "microsoft" in platform.uname().release.lower()
 
-# A dev container or Codespace has the whole audio stack installed and no device
-# to point it at, so the usual "install these packages" advice is wrong there.
-IS_CONTAINER = (
-    os.path.exists("/.dockerenv")
-    or "CODESPACES" in os.environ
-    or "REMOTE_CONTAINERS" in os.environ
-)
-
 SAMPLE_RATE = 24000 # Matches the rate the agent uses from Step 2 onward.
 CHANNELS = 1
 DTYPE = "int16"
@@ -62,13 +54,7 @@ FAIL = " FAIL "
 
 def audio_hint() -> None:
     """Print the audio fix most likely to apply on this platform."""
-    if IS_CONTAINER:
-        print("         This is a container, and it has no audio device. The")
-        print("         packages are all installed -- there is simply nothing")
-        print("         for them to open. Steps 3-8 need real hardware: run")
-        print("         them on your own machine with uv, or share your Linux")
-        print("         host's devices (see .devcontainer/README.md).")
-    elif sys.platform == "darwin":
+    if sys.platform == "darwin":
         print("         macOS: System Settings > Privacy & Security > Microphone,")
         print("         and enable your terminal or editor. Run this again after.")
     elif IS_WSL:
@@ -151,9 +137,8 @@ def check_devices() -> bool:
         print(f"[{PASS}] {label}: {device['name']} ({device[channel_key]} ch)")
 
     if not ok:
-        if not IS_CONTAINER:
-            print("         Pick a device in your OS sound settings, then re-run.")
-            print("         Bluetooth headsets often need to be reconnected here.")
+        print("         Pick a device in your OS sound settings, then re-run.")
+        print("         Bluetooth headsets often need to be reconnected here.")
         audio_hint()
 
     return ok

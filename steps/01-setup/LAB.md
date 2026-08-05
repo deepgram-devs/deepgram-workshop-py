@@ -88,10 +88,6 @@ sudo apt install -y libportaudio2 libasound2-plugins alsa-utils
 
 **Headless server or container** — There genuinely is no audio device. This workshop needs a real microphone and speaker; run it on a desktop machine.
 
-### Dev container or Codespace
-
-If you're working in the [dev container](../../.devcontainer/README.md), the key and device checks are the only ones that can pass — a container has no microphone or speaker unless a Linux host shares them, and Codespaces has no audio hardware at all. Steps 3 onward stream live audio, so they need real devices. Either run the workshop locally with `uv`, or set up the audio passthrough in [.devcontainer/README.md](../../.devcontainer/README.md).
-
 ### WSL (Windows Subsystem for Linux)
 
 WSL routes audio through PulseAudio, but PortAudio only looks for ALSA. Bridge the two:
