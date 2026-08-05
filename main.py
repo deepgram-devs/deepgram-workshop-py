@@ -5,6 +5,12 @@ WebSocket, and plays the agent's Flux TTS response back through the default spea
 Cross-platform: sounddevice ships PortAudio binaries in its wheels for Linux,
 macOS, and Windows, so no system-level audio install is required.
 
+Speech-to-text runs on Flux, Deepgram's conversational model, which detects turn
+boundaries inside the model. The client does no voice activity detection of its
+own: the agent emits UserStartedSpeaking at start-of-turn and sends the
+transcript to the LLM at end-of-turn. The client's one obligation is prompt
+barge-in -- see the UserStartedSpeaking branch below.
+
 Press Ctrl+C to exit.
 """
 
@@ -19,7 +25,7 @@ from deepgram.agent.v1.types import (
     AgentV1Settings,
     AgentV1SettingsAgent,
     AgentV1SettingsAgentListen,
-    AgentV1SettingsAgentListenProvider_V1,
+    AgentV1SettingsAgentListenProvider_V2,
     AgentV1SettingsAudio,
     AgentV1SettingsAudioInput,
     AgentV1SettingsAudioOutput,
@@ -35,9 +41,18 @@ load_dotenv()
 
 AgentMessage = Union[str, bytes]
 
-SAMPLE_RATE = 24000
-CHANNELS = 1
-DTYPE = "int16"
+SAMPLE_RATE = 24000 # Deepgram's recommended sample rate for voice agents. For telephony, 8000 is recommended.
+CHANNELS = 1 # Deepgram's recommended channel count for voice agents. Mono is the most widely supported format across platforms and languages.
+DTYPE = "int16" # Deepgram's recommended PCM format for voice agents. Raw 16-bit signed integer PCM is the most widely supported format across platforms and languages.
+BLOCK_SIZE = SAMPLE_RATE * 80 // 1000 # 80 ms of audio per block, the chunk size Flux is tuned for. Smaller blocks add websocket overhead; larger ones delay turn detection.
+
+# Flux's turn detection knobs. Every turn gets an end-of-turn confidence score;
+# these decide how much confidence is enough and how long silence may run.
+EOT_THRESHOLD = 0.7 # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
+EOT_TIMEOUT_MS = 5000 # Valid 500-60000. Hard ceiling: end the turn after this much silence no matter what the score says.
+# Also available: eager_eot_threshold (0.3-0.9, off by default, must be <=
+# EOT_THRESHOLD). It starts the LLM on a probable turn end and discards the work
+# if the user keeps talking -- lower latency, more LLM calls.
 
 SETTINGS = AgentV1Settings(
     audio=AgentV1SettingsAudio(
@@ -45,10 +60,17 @@ SETTINGS = AgentV1Settings(
         output=AgentV1SettingsAudioOutput(encoding="linear16", sample_rate=SAMPLE_RATE),
     ),
     agent=AgentV1SettingsAgent(
+        # Flux is Deepgram's conversational speech-to-text model, built for
+        # voice agents. The "v2" provider version routes the agent to the v2
+        # Listen backend (wss://api.deepgram.com/v2/listen), where the flux
+        # models live. Turn detection is part of the model, so the thresholds
+        # are configured here.
         listen=AgentV1SettingsAgentListen(
-            provider=AgentV1SettingsAgentListenProvider_V1(
+            provider=AgentV1SettingsAgentListenProvider_V2(
                 type="deepgram",
-                model="nova-3",
+                model="flux-general-en", # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
+                eot_threshold=EOT_THRESHOLD, # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
+                eot_timeout_ms=EOT_TIMEOUT_MS, # Valid 500-60000. Hard ceiling: end the turn after this much silence no matter what the score says.
             ),
         ),
         think=ThinkSettingsV1(
@@ -57,18 +79,19 @@ SETTINGS = AgentV1Settings(
                 model="gpt-4o-mini",
                 temperature=0.7,
             ),
+            # The prompt is prepended to every user turn before sending it to the LLM. It
             prompt="You are a helpful AI assistant. Keep your responses brief.",
         ),
         # Flux TTS is Deepgram's streaming, turn-based voice engine built for
         # voice agents. The "flux-" model prefix routes the agent to the v2
-        # Speak backend (wss://api.deepgram.com/v2/speak) automatically -- Aura
-        # model names are not valid there, and flux names are not valid on v1.
+        # Speak backend (wss://api.deepgram.com/v2/speak) automatically.
         speak=SpeakSettingsV1(
             provider=SpeakSettingsV1Provider_Deepgram(
                 type="deepgram",
                 model="flux-alexis-en",
             ),
         ),
+        # The agent's first utterance, which is sent to the LLM as part of the
         greeting="Hello! I'm a Deepgram voice agent. What would you like to talk about?",
     ),
 )
@@ -109,7 +132,14 @@ def main() -> None:
                     attribute names the event.
             """
             if isinstance(message, bytes):
-                speaker.write(message)
+                try:
+                    speaker.write(message)
+                except sd.PortAudioError as error:
+                    # Dropping a chunk beats ending the call. This handler runs
+                    # inside the SDK's receive loop, which wraps the whole loop
+                    # in a single try/except, so any exception escaping here is
+                    # reported as EventType.ERROR and closes the connection.
+                    print(f">> Dropped audio chunk: {error}")
                 return
 
             message_type = getattr(message, "type", "Unknown")
@@ -122,17 +152,46 @@ def main() -> None:
                 content = getattr(message, "content", "")
                 print(f"[{role}] {content}")
             elif message_type == "UserStartedSpeaking":
-                print(">> User started speaking")
+                # Flux detected start-of-turn, so the agent has stopped sending
+                # audio -- but whatever it already sent is still queued in
+                # PortAudio and would keep talking over the user. abort()
+                # discards the queue (stop() would drain it, defeating the
+                # point), then the stream is restarted for the next reply.
+                try:
+                    speaker.abort()
+                    speaker.start()
+                    print(">> User started speaking (barge-in: playback cleared)")
+                except sd.PortAudioError as error:
+                    print(f">> User started speaking (barge-in failed: {error})")
             elif message_type == "AgentThinking":
                 print(">> Agent thinking...")
             elif message_type == "AgentStartedSpeaking":
                 print(">> Agent started speaking")
             elif message_type == "AgentAudioDone":
                 print(">> Agent finished speaking")
+            elif message_type == "LatencyReport":
+                # One report per turn, arriving right after the reply starts --
+                # printed, it buries the conversation. Uncomment to watch the
+                # cost of the turn-detection knobs above: total_latency is
+                # end-of-utterance to first audio byte. Also carries
+                # ttt_token_latency, ttt_text_latency, ttt_tool_latency,
+                # ttt_thinking_latency, and tts_latency. Every field is
+                # optional -- absent, not zero, when it doesn't apply.
+                # total = getattr(message, "total_latency", None)
+                # if total is not None:
+                #     print(f">> Latency: {total:.2f}s")
+                pass
             elif message_type == "Error":
                 code = getattr(message, "code", "unknown")
                 description = getattr(message, "description", "unknown error")
                 print(f">> Agent error: {code} - {description}")
+            elif message_type == "Warning":
+                # Non-fatal, and the place a rejected listen setting shows up --
+                # a threshold outside its valid range warns here rather than
+                # failing the handshake.
+                code = getattr(message, "code", "unknown")
+                description = getattr(message, "description", "unknown warning")
+                print(f">> Agent warning: {code} - {description}")
             else:
                 print(f">> {message_type}")
 
@@ -156,22 +215,32 @@ def main() -> None:
             """Forward one captured block of microphone audio to the agent.
 
             PortAudio invokes this on its own high-priority thread, so the body
-            stays a single non-blocking send.
+            stays a single non-blocking send. Nothing here inspects the audio --
+            Flux decides where turns begin and end server-side.
 
             Args:
-                indata: Captured PCM frames. Copied with bytes() because
-                    PortAudio reuses the underlying memory once this callback
-                    returns.
+                indata: Captured PCM frames, BLOCK_SIZE of them. Copied with
+                    bytes() because PortAudio reuses the underlying memory once
+                    this callback returns.
                 _frames: Number of frames in indata. Unused.
                 _time_info: PortAudio timing information. Unused.
                 _status: PortAudio status flags. Unused.
             """
-            agent.send_media(bytes(indata))
+            try:
+                agent.send_media(bytes(indata))
+            except Exception as error:
+                # PortAudio runs this on its own thread, so a stray exception
+                # would abort the stream and resurface out of microphone.stop()
+                # during shutdown, burying the real cause. A dead socket has
+                # nowhere left to send audio, so stop capturing on purpose.
+                print(f">> Microphone stopped: {error}")
+                raise sd.CallbackAbort from error
 
         microphone = sd.RawInputStream(
             samplerate=SAMPLE_RATE,
             channels=CHANNELS,
             dtype=DTYPE,
+            blocksize=BLOCK_SIZE,
             callback=microphone_callback,
         )
         microphone.start()
