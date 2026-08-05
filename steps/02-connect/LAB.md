@@ -33,6 +33,8 @@ The Voice Agent API collapses that into one WebSocket. You describe all three co
 
 Every later step in this workshop either adds to that object or reacts to what it produces.
 
+> **Check yourself** — Which of the three models does `listen` configure, and where does the LLM get named?
+
 ## Do this
 
 Work through the TODO blocks in `main.py` in order.
@@ -48,6 +50,8 @@ The final `else` prints instead of ignoring. Deepgram adds server events over ti
 **TODO 2.3 — Send the settings and wait.** Send `SETTINGS`, then block on the event until `SettingsApplied` comes back.
 
 Do not skip the wait. The agent discards any media it receives before the handshake completes, so every later step opens the microphone *after* this line. Blocking here turns correct ordering into a guarantee instead of a race you win most of the time.
+
+> **Check yourself** — Why must you wait for `SettingsApplied` before sending any audio?
 
 ## Verify
 
@@ -68,6 +72,9 @@ Agent is live. (Step 3 adds the speaker.)
 The agent already spoke. That `[assistant]` line is `ConversationText`, and the audio for it streamed past your handler while you watched — you just have nowhere to play it yet.
 
 Notice `>> Welcome` and `>> History` arriving through the fallthrough branch. Neither has an explicit `elif`, and both still showed up. That's the design working.
+
+> **⏸ Pause — check in with the instructor**
+> Everyone should see `>> Settings applied` and an `[assistant]` line before moving on. This is the first real milestone, and a failure here is almost always the API key.
 
 ## Stuck?
 

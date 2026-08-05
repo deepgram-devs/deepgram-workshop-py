@@ -27,7 +27,12 @@ Function calling connects the agent to things the model can't know: your databas
 
 The single most important detail: **leaving `endpoint` unset marks a function client-side.** That one omission is what makes Deepgram send the call down the socket to you, instead of calling an HTTP endpoint itself. Set `endpoint` and Deepgram handles the call server-side and you never see it. Both are valid; client-side is what you want when the function touches local state, local credentials, or anything you'd rather not expose over HTTP.
 
+> **Check yourself** — What single change to the function definition moves execution from your machine to Deepgram's?
+
 The second most important detail: **the description is a prompt.** It's the only thing the LLM reads when deciding whether to call your function. Write it to say *when* to use the function, not just what it does. "Get the current time" is worse than "Get the current date and time in a given IANA timezone. Use this whenever the user asks what time it is or what today's date is."
+
+> **⏸ Pause — check in with the instructor**
+> Before writing code, sketch a function for your *own* use case — what would your agent need to look up that the model cannot know? Share one or two with the room.
 
 ## Do this
 

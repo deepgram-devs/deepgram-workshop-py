@@ -19,6 +19,7 @@ Run it with:  uv run steps/01-setup/main.py
 """
 
 import os
+import platform
 import sys
 import time
 
@@ -28,6 +29,19 @@ from deepgram import DeepgramClient
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# WSL reports itself as Linux, but its audio needs a PulseAudio-to-ALSA bridge
+# that native Linux does not. "microsoft" in the kernel release is the standard
+# way to tell the two apart.
+IS_WSL = sys.platform == "linux" and "microsoft" in platform.uname().release.lower()
+
+# A dev container or Codespace has the whole audio stack installed and no device
+# to point it at, so the usual "install these packages" advice is wrong there.
+IS_CONTAINER = (
+    os.path.exists("/.dockerenv")
+    or "CODESPACES" in os.environ
+    or "REMOTE_CONTAINERS" in os.environ
+)
 
 SAMPLE_RATE = 24000 # Matches the rate the agent uses from Step 2 onward.
 CHANNELS = 1
@@ -44,6 +58,33 @@ GOOD_PEAK = 0.02
 PASS = "  OK  "
 WARN = " WARN "
 FAIL = " FAIL "
+
+
+def audio_hint() -> None:
+    """Print the audio fix most likely to apply on this platform."""
+    if IS_CONTAINER:
+        print("         This is a container, and it has no audio device. The")
+        print("         packages are all installed -- there is simply nothing")
+        print("         for them to open. Steps 3-8 need real hardware: run")
+        print("         them on your own machine with uv, or share your Linux")
+        print("         host's devices (see .devcontainer/README.md).")
+    elif sys.platform == "darwin":
+        print("         macOS: System Settings > Privacy & Security > Microphone,")
+        print("         and enable your terminal or editor. Run this again after.")
+    elif IS_WSL:
+        print("         WSL routes audio through PulseAudio but PortAudio looks")
+        print("         for ALSA. Bridge them:")
+        print("           sudo apt install -y libasound2-plugins")
+        print("           printf 'pcm.!default { type pulse }\\nctl.!default { type pulse }\\n' > ~/.asoundrc")
+        print("         See steps/01-setup/LAB.md for the full WSL walkthrough.")
+    elif sys.platform == "linux":
+        print("         Linux: install the PortAudio and ALSA userspace packages:")
+        print("           sudo apt install -y libportaudio2 libasound2-plugins alsa-utils")
+        print("         On a headless server there is no audio device at all --")
+        print("         this workshop needs a real microphone and speaker.")
+    elif sys.platform == "win32":
+        print("         Windows: Settings > Privacy & security > Microphone, and")
+        print("         allow desktop apps to access it.")
 
 
 def check_key() -> str | None:
@@ -110,8 +151,10 @@ def check_devices() -> bool:
         print(f"[{PASS}] {label}: {device['name']} ({device[channel_key]} ch)")
 
     if not ok:
-        print("         Pick a device in your OS sound settings, then re-run.")
-        print("         Bluetooth headsets often need to be reconnected here.")
+        if not IS_CONTAINER:
+            print("         Pick a device in your OS sound settings, then re-run.")
+            print("         Bluetooth headsets often need to be reconnected here.")
+        audio_hint()
 
     return ok
 
@@ -155,9 +198,7 @@ def check_microphone() -> bool:
                 time.sleep(0.05)
     except Exception as error:  # noqa: BLE001 -- report any device problem, never crash
         print(f"\n[{FAIL}] Microphone capture failed: {error}")
-        if sys.platform == "darwin":
-            print("         On macOS, check System Settings > Privacy & Security >")
-            print("         Microphone and enable your terminal or editor.")
+        audio_hint()
         return False
 
     if live:
@@ -166,9 +207,7 @@ def check_microphone() -> bool:
     if peak < GOOD_PEAK:
         print(f"[{WARN}] Microphone opened but heard almost nothing (peak {peak:.3f}).")
         print("         Check you are not muted and the right input is selected.")
-        if sys.platform == "darwin":
-            print("         If macOS never prompted for microphone access, grant it in")
-            print("         System Settings > Privacy & Security > Microphone.")
+        audio_hint()
         return False
 
     print(f"[{PASS}] Microphone heard you (peak {peak:.2f})")
@@ -195,6 +234,7 @@ def check_speaker() -> bool:
         sd.wait()
     except Exception as error:  # noqa: BLE001 -- report any device problem, never crash
         print(f"[{FAIL}] Playback failed: {error}")
+        audio_hint()
         return False
 
     print(f"[{PASS}] Speaker played a tone -- you should have heard it")

@@ -1,0 +1,56 @@
+{
+  "name": "Deepgram Voice Agent Workshop (Python)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  // Prompted for on Codespaces creation, then exported into the container.
+  // load_dotenv() never overrides a real environment variable, so this key wins
+  // over whatever is in .env.
+  "secrets": {
+    "DEEPGRAM_API_KEY": {
+      "description": "Your Deepgram API key. Free keys include $200 of credit; this workshop costs well under a dollar.",
+      "documentationUrl": "https://console.deepgram.com/signup?jump=keys"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.terminal.activateEnvironment": false,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "files.associations": {
+          ".env.example": "dotenv"
+        }
+      }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // Audio passthrough -- Linux hosts only, and off by default.
+  //
+  // A container has no microphone or speaker unless the host hands one over,
+  // and only a Linux host can. Uncommenting these on macOS, Windows, or
+  // Codespaces makes the container fail to start, because /dev/snd is not
+  // there to mount. Read .devcontainer/README.md before touching them.
+  //
+  // "runArgs": ["--device=/dev/snd"],
+  // "mounts": [
+  //   "source=/run/user/1000/pulse,target=/run/user/1000/pulse,type=bind"
+  // ],
+  // "containerEnv": {
+  //   "PULSE_SERVER": "unix:/run/user/1000/pulse/native"
+  // },
+  // ---------------------------------------------------------------------------
+
+  "remoteUser": "vscode"
+}

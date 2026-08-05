@@ -26,6 +26,8 @@ That maps directly onto `sd.RawOutputStream`. The "raw" variant accepts `bytes` 
 
 The three constants at the top of the file (`SAMPLE_RATE`, `CHANNELS`, `DTYPE`) have to match the `output` settings exactly. When they disagree you don't get an error — you get audio at the wrong speed and pitch, which is a memorable way to learn this lesson and an annoying way to spend ten minutes.
 
+> **Check yourself** — Why do you open the speaker stream *before* sending settings rather than after?
+
 ## Do this
 
 **TODO 3.1 — Import `sounddevice`.** It goes with the other third-party imports, alphabetized. `sounddevice` ships PortAudio binaries inside its wheels for Linux, macOS, and Windows, which is the entire reason this workshop uses it — there's nothing to install at the system level.
@@ -57,6 +59,9 @@ Listening to the greeting... (Step 4 opens the microphone)
 ```
 
 `>> AgentAudioDone` now reads `>> Agent finished speaking`, and the timing lines up with the audio ending.
+
+> **⏸ Pause — check in with the instructor**
+> Everyone should hear the greeting out loud. Silent machines need fixing now — Step 4 is much harder to debug when you cannot hear anything.
 
 ## Stuck?
 

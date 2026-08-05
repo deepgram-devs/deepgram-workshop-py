@@ -40,12 +40,21 @@ STANDALONE = {"01-setup"}
 
 
 def step_dirs() -> list[Path]:
-    """Return every step folder, in workshop order.
+    """Return every step folder that ships runnable code, in workshop order.
 
     Returns:
         Sorted list of directories under steps/ that contain a main.py.
     """
     return sorted(d for d in STEPS.iterdir() if d.is_dir() and (d / "main.py").exists())
+
+
+def all_step_dirs() -> list[Path]:
+    """Return every step folder, including doc-only ones like 00-overview.
+
+    Returns:
+        Sorted list of directories under steps/.
+    """
+    return sorted(d for d in STEPS.iterdir() if d.is_dir())
 
 
 def check_compiles(steps: list[Path]) -> list[str]:
@@ -95,17 +104,39 @@ def check_marker_leakage(steps: list[Path]) -> list[str]:
 def check_docs(steps: list[Path]) -> list[str]:
     """Confirm every step ships the document an attendee is told to open.
 
+    Covers doc-only steps such as 00-overview, which have no main.py and so
+    never reach the code checks.
+
     Args:
-        steps: Step folders to check.
+        steps: Step folders to check. Ignored -- every folder is inspected.
 
     Returns:
         A list of failure messages, empty when every doc exists.
     """
+    del steps
     failures = []
-    for step in steps:
+    for step in all_step_dirs():
         wanted = "README.md" if step.name.startswith("99") else "LAB.md"
         if not (step / wanted).exists():
             failures.append(f"{step.name}/ is missing {wanted}")
+    return failures
+
+
+def check_lab_links(_steps: list[Path]) -> list[str]:
+    """Confirm every relative link in a step doc points at a file that exists.
+
+    A broken "Next:" link strands an attendee mid-workshop, which is the kind
+    of thing nobody notices until it happens in a room.
+
+    Returns:
+        A list of failure messages, empty when every link resolves.
+    """
+    link = re.compile(r"\]\((?!https?:)([^)#]+)\)")
+    failures = []
+    for doc in sorted(STEPS.glob("*/*.md")) + [REPO / "README.md", REPO / "FACILITATOR.md"]:
+        for target in link.findall(doc.read_text()):
+            if not (doc.parent / target).exists():
+                failures.append(f"{doc.relative_to(REPO)} links to missing {target}")
     return failures
 
 
@@ -175,6 +206,7 @@ def main() -> None:
         ("compiles", lambda: check_compiles(steps)),
         ("no leaked TODO markers", lambda: check_marker_leakage(steps)),
         ("docs present", lambda: check_docs(steps)),
+        ("doc links resolve", lambda: check_lab_links(steps)),
         ("steps grow", lambda: check_growth(steps)),
         ("ruff", check_lint),
     ):

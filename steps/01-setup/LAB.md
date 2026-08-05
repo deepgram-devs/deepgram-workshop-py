@@ -34,6 +34,13 @@ Open `.env` and paste in your Deepgram API key. Grab a free one at [console.deep
 
 That key is the only credential you need. The agent you build uses OpenAI's `gpt-4o-mini` as its brain, but Deepgram brokers that call — so no OpenAI account, no second key, no second bill.
 
+New Deepgram accounts get **$200 in credit** applied automatically. This workshop costs well under a dollar, so you'll have plenty left to keep building afterward.
+
+> **Check yourself** — How many API keys does this workshop need, and why doesn't the LLM require its own?
+
+> **⏸ Pause — check in with the instructor**
+> Wait until everyone has a key in `.env` before moving on. This is the step where people get stuck, and it's much cheaper to fix now than in the middle of Step 2.
+
 **3. Run the check.**
 
 ```bash
@@ -70,6 +77,36 @@ Every line reads `OK`, and you heard the tone. Anything else, work through the f
 **Bluetooth headphones behaving strangely** — Many headsets expose a low-quality mono profile when their microphone activates. Disconnect and reconnect the headset, or use wired headphones for the workshop. Wired headphones also spare you the speaker-feeding-microphone loop in Step 5.
 
 **Wrong device selected entirely** — `sounddevice` follows your operating system's default. Change the default in your OS sound settings and re-run; there's nothing to edit in the code.
+
+### Linux
+
+**`Could not query audio devices` or no devices listed** — Install ALSA's userspace pieces and the PulseAudio plugin:
+
+```bash
+sudo apt install -y libportaudio2 libasound2-plugins alsa-utils
+```
+
+**Headless server or container** — There genuinely is no audio device. This workshop needs a real microphone and speaker; run it on a desktop machine.
+
+### Dev container or Codespace
+
+If you're working in the [dev container](../../.devcontainer/README.md), the key and device checks are the only ones that can pass — a container has no microphone or speaker unless a Linux host shares them, and Codespaces has no audio hardware at all. Steps 3 onward stream live audio, so they need real devices. Either run the workshop locally with `uv`, or set up the audio passthrough in [.devcontainer/README.md](../../.devcontainer/README.md).
+
+### WSL (Windows Subsystem for Linux)
+
+WSL routes audio through PulseAudio, but PortAudio only looks for ALSA. Bridge the two:
+
+```bash
+sudo apt install -y libasound2-plugins
+cat > ~/.asoundrc <<'EOF'
+pcm.!default { type pulse }
+ctl.!default { type pulse }
+EOF
+```
+
+Then re-run the check. If the microphone still reads silent, confirm Windows itself has microphone access enabled for your terminal under **Settings → Privacy & security → Microphone**.
+
+WSL audio is the single most common environment failure in this workshop. If it resists, running natively on Windows with `uv` works without any of this.
 
 ## Going further
 

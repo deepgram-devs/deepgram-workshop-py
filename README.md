@@ -20,6 +20,12 @@ One virtual environment serves every step. You run `uv sync` once.
 
 That last command checks your key, your audio devices, and your microphone before any of it matters. On macOS it also triggers the microphone permission prompt — much better here than mid-conversation later.
 
+### Or use the dev container
+
+A [dev container](.devcontainer/README.md) ships with Python, `uv`, and every dependency already installed — open the repo in a Codespace or run **Dev Containers: Reopen in Container** in VS Code, and paste your key when prompted.
+
+One caveat, and it's a real one: **a container cannot reach your microphone or speaker** unless you're on a Linux host and share them explicitly. Codespaces has no audio hardware at all. The dev container is a good way to read, edit, and lint the workshop, and to run Step 2's handshake — but hearing the agent talk needs `uv` on your own machine, or the Linux audio passthrough described in [.devcontainer/README.md](.devcontainer/README.md).
+
 **Headphones are strongly recommended.** Without them your speaker feeds your microphone and the agent interrupts itself, which is confusing in Step 4 and actively misleading in Step 5.
 
 ## The steps
@@ -28,6 +34,7 @@ Each folder holds the finished state of the step before it. Open `LAB.md` for in
 
 | Step | You build | Run it | Time |
 |---|---|---|---|
+| [0 — Overview](steps/00-overview/LAB.md) | *(read only)* What a voice agent is made of | — | 10 min |
 | [1 — Setup](steps/01-setup/LAB.md) | Verify key, devices, and microphone | `uv run steps/01-setup/main.py` | 15 min |
 | [2 — Connect](steps/02-connect/LAB.md) | The WebSocket and settings handshake | `uv run steps/02-connect/main.py` | 20 min |
 | [3 — Hear the agent](steps/03-hear-the-agent/LAB.md) | Speaker output — the greeting plays | `uv run steps/03-hear-the-agent/main.py` | 25 min |
@@ -38,7 +45,9 @@ Each folder holds the finished state of the step before it. Open `LAB.md` for in
 | [8 — Function calling](steps/08-function-calling/LAB.md) | The agent runs your Python | `uv run steps/08-function-calling/main.py` | 35 min |
 | [Finished](steps/99-final/README.md) | The complete reference implementation | `uv run steps/99-final/main.py` | — |
 
-Running behind? Steps 1–5 are the core — finish those and you have a working voice agent. Steps 6–8 stand alone well enough to work through afterward.
+Running behind? Steps 1–5 are the core — finish those and you have a working voice agent. Steps 6–8 stand alone well enough to work through afterward. And because every folder is complete, skipping ahead costs you the typing, not the workshop.
+
+Each lab has **Check yourself** questions to test your understanding as you go, and **⏸ Pause** markers where a live workshop regroups.
 
 ## What you'll learn
 
@@ -56,7 +65,9 @@ Running behind? Steps 1–5 are the core — finish those and you have a working
 - [GitHub Discussions](https://github.com/orgs/deepgram/discussions)
 - [Discord](https://discord.gg/xWRaCDBtW4)
 
-## Maintainers
+## Running this workshop yourself
+
+[FACILITATOR.md](FACILITATOR.md) has the run of show with timings and sync points, a pre-event setup email to send a week ahead, the five environment failures you'll actually hit, an answer key for the Check-yourself questions, and guidance on managing pace spread in a room.
 
 `scripts/verify_steps.py` checks that every step compiles, lints, and leaks no unfinished TODO markers into the next folder's answer key:
 

@@ -36,6 +36,8 @@ The prompt deserves the most attention, because writing prompts for *speech* dif
 
 Keep the prompt short for a second reason: every token is re-sent on every turn, and long prompts slow the first reply.
 
+> **Check yourself** — Name the two prompt instructions that matter for speech but not for chat.
+
 ## Do this
 
 **TODO 7.1 — Give your agent a job.** Rewrite the prompt. Cover both rules above, then make it something specific — a barista taking an order, support for a product you know well, a dungeon master, a museum guide. Specific beats generic every time, and it's much more fun to test.
@@ -63,6 +65,9 @@ Your agent greets you in character, in a different voice, and stays in role when
 ```
 
 Ask it something that would normally get a bulleted list — "what are the main types of coffee drinks?" — and confirm you hear prose, not punctuation.
+
+> **⏸ Pause — check in with the instructor**
+> Good moment to go around the room. Personas are the most fun part of the workshop and hearing four different agents makes the prompt lesson land harder than any explanation.
 
 ## Stuck?
 

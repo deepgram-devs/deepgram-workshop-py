@@ -57,6 +57,8 @@ Watch `>> Latency:` alongside. The number moves, and it moves in the direction t
 
 There's no correct answer here — it depends entirely on what you're building. A drive-through order taker wants low thresholds and fast turns. A therapy intake bot wants high thresholds and long silences. Pick the one that matches the agent you actually want.
 
+> **Check yourself** — The agent keeps cutting you off when you pause to think. Which setting do you change, and in which direction?
+
 ## Verify
 
 Latency prints once per turn:

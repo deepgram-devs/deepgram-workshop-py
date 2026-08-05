@@ -20,6 +20,9 @@ It keeps going. Cheerfully, right across you, while the console prints `>> UserS
 
 Sit with that for a second, because that gap is the entire step.
 
+> **⏸ Pause — check in with the instructor**
+> Do this part together. Everyone should hear the agent talk over them at least once before writing the fix — the bug is far more memorable than the patch.
+
 ## The mental model
 
 By the time `UserStartedSpeaking` reaches your handler, a lot has already happened correctly. Flux detected start-of-turn inside the model. The agent stopped generating. The server stopped sending audio.
@@ -40,6 +43,8 @@ speaker.start()   # reopen for the next reply
 Use `abort()`, not `stop()`.
 
 `stop()` **drains** the buffer — it plays everything already queued and *then* stops. That's precisely the behavior you're trying to eliminate. It's the single most common bug in a first voice agent, and it survives code review easily because `stop()` reads like the more polite call. `abort()` throws the queue away, which is exactly what an interrupted speaker should do.
+
+> **Check yourself** — What does `stop()` do differently from `abort()`, and why is that wrong here?
 
 Then `start()` again, because an aborted stream is closed and the next reply needs somewhere to land.
 

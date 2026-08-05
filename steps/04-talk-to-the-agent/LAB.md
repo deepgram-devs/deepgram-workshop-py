@@ -26,6 +26,8 @@ That constraint shapes the whole design. The callback body is one non-blocking s
 
 Here's the part that surprises people coming from traditional speech pipelines: there's no voice activity detection anywhere in this file. No silence trimming, no energy threshold, no "has the user stopped talking" logic. Flux performs turn detection inside the model, server-side. Your entire job on the outbound side is keeping the pipe full and letting Flux decide the rest.
 
+> **Check yourself** — Traditional voice pipelines need voice activity detection in the client. Why doesn't this one?
+
 ## Do this
 
 Everything in this step goes *below* the settings handshake. That placement matters: the agent discards media until `SettingsApplied` arrives, so opening the microphone any earlier throws away your first words. The `settings_applied.wait(10)` you wrote in Step 2 is what makes that ordering reliable.
@@ -33,6 +35,8 @@ Everything in this step goes *below* the settings handshake. That placement matt
 **TODO 4.1 — Write the callback.** Three things in that tiny body carry weight:
 
 `bytes(indata)` **copies**. PortAudio reuses the underlying memory as soon as your callback returns, so passing the buffer along unmodified hands the socket a view of audio that's about to be overwritten. You'd hear the symptom as garbled or repeated audio and spend a long time blaming the network.
+
+> **Check yourself** — What exactly goes wrong if you call `agent.send_media(indata)` without the `bytes()` wrapper?
 
 **The body stays minimal.** One send. See the realtime-thread constraint above.
 
@@ -68,6 +72,9 @@ Listening... press Ctrl+C to exit.
 Ctrl+C exits cleanly.
 
 Two things to notice. First, `>> UserStartedSpeaking` appears with no branch handling it — that's the Step 2 fallthrough earning its place, and it becomes the whole point of Step 5. Second, the `CLIENT_MESSAGE_TIMEOUT` from earlier steps is gone. Once you're streaming audio continuously, the agent has no reason to hang up.
+
+> **⏸ Pause — check in with the instructor**
+> Everyone should have held a real conversation. This is the high point of the workshop — take a minute, let people ask it something silly, and make sure nobody is left behind before Step 5.
 
 ## Stuck?
 
