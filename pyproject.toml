@@ -8,3 +8,9 @@ dependencies = [
     "python-dotenv==1.2.2",
     "sounddevice==0.5.5",
 ]
+
+[tool.ruff.lint]
+extend-select = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

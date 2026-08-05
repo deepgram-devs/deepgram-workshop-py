@@ -1,7 +1,7 @@
 """Bare-minimum Deepgram Voice Agent with live mic input and speaker output.
 
 Captures audio from the default microphone, streams it to Deepgram's Voice Agent
-WebSocket, and plays the agent's spoken response back through the default speaker.
+WebSocket, and plays the agent's Flux TTS response back through the default speaker.
 Cross-platform: sounddevice ships PortAudio binaries in its wheels for Linux,
 macOS, and Windows, so no system-level audio install is required.
 
@@ -59,10 +59,14 @@ SETTINGS = AgentV1Settings(
             ),
             prompt="You are a helpful AI assistant. Keep your responses brief.",
         ),
+        # Flux TTS is Deepgram's streaming, turn-based voice engine built for
+        # voice agents. The "flux-" model prefix routes the agent to the v2
+        # Speak backend (wss://api.deepgram.com/v2/speak) automatically -- Aura
+        # model names are not valid there, and flux names are not valid on v1.
         speak=SpeakSettingsV1(
             provider=SpeakSettingsV1Provider_Deepgram(
                 type="deepgram",
-                model="aura-2-asteria-en",
+                model="flux-alexis-en",
             ),
         ),
         greeting="Hello! I'm a Deepgram voice agent. What would you like to talk about?",
@@ -71,6 +75,17 @@ SETTINGS = AgentV1Settings(
 
 
 def main() -> None:
+    """Open the agent connection and stream audio until interrupted.
+
+    Starts the speaker, registers the event handlers, then applies SETTINGS and
+    waits for the agent to acknowledge them before opening the microphone. The
+    agent discards media until the settings handshake completes, so the order
+    matters. Both audio streams are stopped on the way out, including after Ctrl+C.
+
+    Raises:
+        TimeoutError: If the agent does not acknowledge SETTINGS within ten
+            seconds.
+    """
     client = DeepgramClient(api_key=os.getenv("DEEPGRAM_API_KEY"))
 
     with client.agent.v1.connect() as agent:
@@ -83,6 +98,16 @@ def main() -> None:
         speaker.start()
 
         def on_message(message: AgentMessage) -> None:
+            """Handle one inbound frame from the agent.
+
+            Unrecognized message types fall through to a plain print so that new
+            server events stay visible rather than being silently dropped.
+
+            Args:
+                message: Either raw bytes of Flux TTS audio, which are written
+                    straight to the speaker, or a decoded model whose "type"
+                    attribute names the event.
+            """
             if isinstance(message, bytes):
                 speaker.write(message)
                 return
@@ -128,6 +153,19 @@ def main() -> None:
         def microphone_callback(
             indata: memoryview, _frames: int, _time_info: object, _status: object,
         ) -> None:
+            """Forward one captured block of microphone audio to the agent.
+
+            PortAudio invokes this on its own high-priority thread, so the body
+            stays a single non-blocking send.
+
+            Args:
+                indata: Captured PCM frames. Copied with bytes() because
+                    PortAudio reuses the underlying memory once this callback
+                    returns.
+                _frames: Number of frames in indata. Unused.
+                _time_info: PortAudio timing information. Unused.
+                _status: PortAudio status flags. Unused.
+            """
             agent.send_media(bytes(indata))
 
         microphone = sd.RawInputStream(
