@@ -1,10 +1,10 @@
-# UC Berkeley AI Workshop
+# Deepgram Voice Agent Workshop - Python Edition
 
 [![Discord](https://img.shields.io/discord/1108042150941294664)](https://discord.gg/xWRaCDBtW4)
 
-This repository contains the boilerplate for our workshop at the UC Berkeley 2026 AI Hackathon~
+This repository contains the boilerplate for Deepgram Voice Agents.
 
-If you are interested in knowing more: https://dpgr.am/ucb-ai-guide
+The walkthough companion guide is located at: [URL TBD](TBD)
 
 ## Getting an API Key
 
@@ -14,6 +14,6 @@ To access the Deepgram API you will need a [free Deepgram API Key](https://conso
 
 If you have questions, comments, or run into an issue:
 
-- [Open an issue](https://github.com/deepgram-devs/uc-berkeley-ai-workshop-2026/issues/new/choose)
+- [Open an issue](TBD)
 - [GitHub Discussions](https://github.com/orgs/deepgram/discussions)
 - [Discord](https://discord.gg/xWRaCDBtW4)
