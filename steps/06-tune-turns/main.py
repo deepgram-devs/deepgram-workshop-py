@@ -10,39 +10,32 @@ agent feels natural or infuriating, and the only way to calibrate it is by ear.
 
 Look for the "TODO (Step 6.x)" blocks below.
 
-Press Ctrl+C to exit.
+Run it with:  uv run steps/06-tune-turns/main.py
 """
 
-import os
-import threading
-import time
-
-import sounddevice as sd
-from deepgram import DeepgramClient
 from deepgram.agent.v1.types import (
     AgentV1Settings,
     AgentV1SettingsAgent,
-    AgentV1SettingsAgentListen,
-    AgentV1SettingsAgentListenProvider_V2,
+    AgentV1SettingsAgentContextListen,
+    AgentV1SettingsAgentContextListenProvider_V2,
     AgentV1SettingsAudio,
     AgentV1SettingsAudioInput,
     AgentV1SettingsAudioOutput,
 )
-from deepgram.core.events import EventType
 from deepgram.types.speak_settings_v1 import SpeakSettingsV1
 from deepgram.types.speak_settings_v1provider import SpeakSettingsV1Provider_Deepgram
 from deepgram.types.think_settings_v1 import ThinkSettingsV1
 from deepgram.types.think_settings_v1provider import ThinkSettingsV1Provider_OpenAi
 from dotenv import load_dotenv
 
+from web import AgentHandle, Player, bridge
+
 load_dotenv()
 
-AgentMessage = str | bytes
-
-SAMPLE_RATE = 24000 # Deepgram's recommended sample rate for voice agents. For telephony, 8000 is recommended.
-CHANNELS = 1 # Deepgram's recommended channel count for voice agents. Mono is the most widely supported format across platforms and languages.
-DTYPE = "int16" # Deepgram's recommended PCM format for voice agents. Raw 16-bit signed integer PCM is the most widely supported format across platforms and languages.
-BLOCK_SIZE = SAMPLE_RATE * 80 // 1000 # 80 ms of audio per block, the chunk size Flux is tuned for. Smaller blocks add websocket overhead; larger ones delay turn detection.
+SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For telephony, 8000 is recommended.
+# The browser captures in 80 ms chunks -- the size Flux's turn detection is
+# tuned for. That interacts with everything below: no threshold setting can
+# detect a turn end sooner than the chunk carrying it arrives.
 
 # ---- TODO (Step 6.1): Expose the turn-detection knobs ---------------------
 # Flux scores every turn for end-of-turn confidence. Two settings decide how
@@ -61,6 +54,10 @@ BLOCK_SIZE = SAMPLE_RATE * 80 // 1000 # 80 ms of audio per block, the chunk size
 #
 # EOT_TIMEOUT_MS is the hard ceiling: end the turn after this much silence no
 # matter what the score says.
+#
+# Also available: eager_eot_threshold (0.3-0.9, off by default, must be <=
+# EOT_THRESHOLD). It starts the LLM on a probable turn end and discards the
+# work if the user keeps talking -- lower latency, more LLM calls.
 # ---------------------------------------------------------------------------
 
 SETTINGS = AgentV1Settings(
@@ -74,10 +71,10 @@ SETTINGS = AgentV1Settings(
         # Listen backend (wss://api.deepgram.com/v2/listen), where the flux
         # models live. Turn detection is part of the model, so the thresholds
         # are configured here.
-        listen=AgentV1SettingsAgentListen(
-            provider=AgentV1SettingsAgentListenProvider_V2(
+        listen=AgentV1SettingsAgentContextListen(
+            provider=AgentV1SettingsAgentContextListenProvider_V2(
                 type="deepgram",
-                model="flux-general-en", # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
+                model="flux-general-en",  # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
                 # ---- TODO (Step 6.2): Wire the knobs up -------------------
                 # Pass the two constants from TODO 6.1:
                 #
@@ -120,161 +117,87 @@ SETTINGS = AgentV1Settings(
 )
 
 
-def main() -> None:
-    """Open the agent connection and stream audio until interrupted.
+def on_message(agent: AgentHandle, player: Player, message: object) -> None:
+    """Handle one inbound frame from the agent.
 
-    Starts the speaker, registers the event handlers, then applies SETTINGS and
-    waits for the agent to acknowledge them before opening the microphone. The
-    agent discards media until the settings handshake completes, so the order
-    matters. Both audio streams are stopped on the way out, including after Ctrl+C.
+    Unrecognized message types fall through to a plain print so that new server
+    events stay visible rather than being silently dropped.
 
-    Raises:
-        TimeoutError: If the agent does not acknowledge SETTINGS within ten
-            seconds.
+    Args:
+        agent: The connected agent. Unused until Step 8.
+        player: Where audio is played. send() queues a chunk; clear() throws
+            away whatever is queued but not yet heard.
+        message: Either raw bytes of Flux TTS audio, or a decoded model whose
+            "type" attribute names the event.
     """
-    client = DeepgramClient(api_key=os.getenv("DEEPGRAM_API_KEY"))
+    if isinstance(message, bytes):
+        player.send(message)
+        return
 
-    with client.agent.v1.connect() as agent:
-        settings_applied = threading.Event()
-        speaker = sd.RawOutputStream(
-            samplerate=SAMPLE_RATE,
-            channels=CHANNELS,
-            dtype=DTYPE,
-        )
-        speaker.start()
+    message_type = getattr(message, "type", "Unknown")
 
-        def on_message(message: AgentMessage) -> None:
-            """Handle one inbound frame from the agent.
+    if message_type == "SettingsApplied":
+        print(">> Settings applied")
+    elif message_type == "ConversationText":
+        role = getattr(message, "role", "unknown")
+        content = getattr(message, "content", "")
+        print(f"[{role}] {content}")
+    elif message_type == "UserStartedSpeaking":
+        # Flux detected start-of-turn, so the agent has stopped sending audio --
+        # but whatever it already sent is still queued, on this side of the
+        # network and in the browser, and would keep talking over the user.
+        player.clear()
+        print(">> User started speaking (barge-in: playback cleared)")
+    elif message_type == "AgentThinking":
+        print(">> Agent thinking...")
+    elif message_type == "AgentStartedSpeaking":
+        print(">> Agent started speaking")
+    elif message_type == "AgentAudioDone":
+        print(">> Agent finished speaking")
+    elif message_type == "LatencyReport":
+        # One report per turn, arriving right after the reply starts.
+        # ---- TODO (Step 6.3): Measure what you changed --------------------
+        # Uncomment the three lines below. total_latency is end-of-utterance
+        # to first audio byte -- the exact number the knobs in TODO 6.1 move,
+        # and the only honest way to tell whether a change helped.
+        #
+        # The report also carries ttt_token_latency, ttt_text_latency,
+        # ttt_tool_latency, ttt_thinking_latency, and tts_latency. Every field
+        # is optional -- absent, not zero, when it does not apply, which is why
+        # the None check below is not decoration.
+        #
+        # The browser already shows this number, on the right of the activity
+        # line above the transcript. Watching it move while you talk is a
+        # faster feedback loop than reading the console.
+        # -------------------------------------------------------------------
+        # total = getattr(message, "total_latency", None)
+        # if total is not None:
+        #     print(f">> Latency: {total:.2f}s")
+        pass
+    elif message_type == "Error":
+        code = getattr(message, "code", "unknown")
+        description = getattr(message, "description", "unknown error")
+        print(f">> Agent error: {code} - {description}")
+    else:
+        print(f">> {message_type}")
 
-            Unrecognized message types fall through to a plain print so that new
-            server events stay visible rather than being silently dropped.
 
-            Args:
-                message: Either raw bytes of Flux TTS audio, which are written
-                    straight to the speaker, or a decoded model whose "type"
-                    attribute names the event.
-            """
-            if isinstance(message, bytes):
-                try:
-                    speaker.write(message)
-                except sd.PortAudioError as error:
-                    # Dropping a chunk beats ending the call. This handler runs
-                    # inside the SDK's receive loop, which wraps the whole loop
-                    # in a single try/except, so any exception escaping here is
-                    # reported as EventType.ERROR and closes the connection.
-                    print(f">> Dropped audio chunk: {error}")
-                return
+def on_media(agent: AgentHandle, audio: bytes) -> None:
+    """Forward one captured chunk of microphone audio to the agent.
 
-            message_type = getattr(message, "type", "Unknown")
+    Nothing here inspects the audio -- Flux decides where turns begin and end
+    server-side, so there is no client-side voice activity detection to run.
 
-            if message_type == "SettingsApplied":
-                print(">> Settings applied")
-                settings_applied.set()
-            elif message_type == "ConversationText":
-                role = getattr(message, "role", "unknown")
-                content = getattr(message, "content", "")
-                print(f"[{role}] {content}")
-            elif message_type == "UserStartedSpeaking":
-                # Flux detected start-of-turn, so the agent has stopped sending
-                # audio -- but whatever it already sent is still queued in
-                # PortAudio and would keep talking over the user. abort()
-                # discards the queue (stop() would drain it, defeating the
-                # point), then the stream is restarted for the next reply.
-                try:
-                    speaker.abort()
-                    speaker.start()
-                    print(">> User started speaking (barge-in: playback cleared)")
-                except sd.PortAudioError as error:
-                    print(f">> User started speaking (barge-in failed: {error})")
-            elif message_type == "AgentThinking":
-                print(">> Agent thinking...")
-            elif message_type == "AgentStartedSpeaking":
-                print(">> Agent started speaking")
-            elif message_type == "AgentAudioDone":
-                print(">> Agent finished speaking")
-            elif message_type == "LatencyReport":
-                # One report per turn, arriving right after the reply starts.
-                # ---- TODO (Step 6.3): Measure what you changed ------------
-                # Uncomment the three lines below. total_latency is
-                # end-of-utterance to first audio byte -- the exact number the
-                # knobs in TODO 6.1 move, and the only honest way to tell
-                # whether a change helped.
-                #
-                # The report also carries ttt_token_latency, ttt_text_latency,
-                # ttt_tool_latency, ttt_thinking_latency, and tts_latency.
-                # Every field is optional -- absent, not zero, when it does not
-                # apply, which is why the None check below is not decoration.
-                # -----------------------------------------------------------
-                # total = getattr(message, "total_latency", None)
-                # if total is not None:
-                #     print(f">> Latency: {total:.2f}s")
-                pass
-            elif message_type == "Error":
-                code = getattr(message, "code", "unknown")
-                description = getattr(message, "description", "unknown error")
-                print(f">> Agent error: {code} - {description}")
-            else:
-                print(f">> {message_type}")
+    Args:
+        agent: The connected agent.
+        audio: One 80 ms chunk of linear16 PCM from the microphone.
+    """
+    agent.send_media(audio)
 
-        agent.on(EventType.OPEN, lambda _: print(">> Connection opened"))
-        agent.on(EventType.MESSAGE, on_message)
-        agent.on(EventType.CLOSE, lambda _: print(">> Connection closed"))
-        agent.on(EventType.ERROR, lambda error: print(f">> Error: {error}"))
 
-        listener = threading.Thread(target=agent.start_listening, daemon=True)
-        listener.start()
-
-        print("Sending agent settings...")
-        agent.send_settings(SETTINGS)
-
-        if not settings_applied.wait(10):
-            raise TimeoutError("Timed out waiting for agent settings to apply.")
-
-        def microphone_callback(
-            indata: memoryview, _frames: int, _time_info: object, _status: object,
-        ) -> None:
-            """Forward one captured block of microphone audio to the agent.
-
-            PortAudio invokes this on its own high-priority thread, so the body
-            stays a single non-blocking send. Nothing here inspects the audio --
-            Flux decides where turns begin and end server-side.
-
-            Args:
-                indata: Captured PCM frames, BLOCK_SIZE of them. Copied with
-                    bytes() because PortAudio reuses the underlying memory once
-                    this callback returns.
-                _frames: Number of frames in indata. Unused.
-                _time_info: PortAudio timing information. Unused.
-                _status: PortAudio status flags. Unused.
-            """
-            try:
-                agent.send_media(bytes(indata))
-            except Exception as error:
-                # PortAudio runs this on its own thread, so a stray exception
-                # would abort the stream and resurface out of microphone.stop()
-                # during shutdown, burying the real cause. A dead socket has
-                # nowhere left to send audio, so stop capturing on purpose.
-                print(f">> Microphone stopped: {error}")
-                raise sd.CallbackAbort from error
-
-        microphone = sd.RawInputStream(
-            samplerate=SAMPLE_RATE,
-            channels=CHANNELS,
-            dtype=DTYPE,
-            blocksize=BLOCK_SIZE,
-            callback=microphone_callback,
-        )
-        microphone.start()
-
-        print("\nListening... press Ctrl+C to exit.\n")
-        try:
-            while True:
-                time.sleep(0.1)
-        except KeyboardInterrupt:
-            print("\nShutting down...")
-        finally:
-            microphone.stop()
-            speaker.stop()
+def main() -> None:
+    """Serve the page and run the agent until interrupted."""
+    bridge.run(settings=SETTINGS, on_message=on_message, on_media=on_media)
 
 
 if __name__ == "__main__":

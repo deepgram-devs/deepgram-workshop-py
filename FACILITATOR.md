@@ -30,7 +30,9 @@ The single biggest predictor of whether this workshop goes well is how many peop
 >    cp .env.example .env    # paste your key in
 >    uv run steps/01-setup/main.py
 >    ```
-> 4. **Bring wired headphones.** Without them the agent hears itself through your speakers and interrupts itself, which makes Step 5 confusing.
+> 4. **Bring wired headphones.** Your browser cancels most of the echo, but not all of it on every browser. Without headphones the agent can hear itself and interrupt itself, which makes Step 5 confusing.
+>
+> The setup check finishes in a browser page. Chrome, Firefox, or Safari, reasonably current.
 >
 > If the check prints anything other than all-OK, reply to this email and we'll sort it out before the day.
 
@@ -58,13 +60,13 @@ Times assume a 3-hour slot with one break. The **⏸** rows are the sync points 
 
 ## The five failures you will actually hit
 
-**1. Microphone permission on macOS.** The prompt appears during Step 1 and people click past it. Fix: **System Settings → Privacy & Security → Microphone**, enable the terminal, re-run. Step 1's checker prints this automatically.
+**1. Microphone permission.** The prompt appears during Step 1 and people click past it. Fix: the icon at the left of the address bar, allow, press the button again. On macOS also check **System Settings → Privacy & Security → Microphone** and confirm the *browser* is enabled — note it is the browser now, not the terminal.
 
-**2. WSL has no audio.** PortAudio looks for ALSA, WSL provides PulseAudio. The bridge is in [steps/01-setup/LAB.md](steps/01-setup/LAB.md) and the checker prints it. If it resists for more than five minutes, move them to native Windows.
+**2. The page is open on the wrong address.** `getUserMedia` and `AudioWorklet` need a secure context, which browsers grant to `localhost` and nothing else — so a LAN address makes the audio API silently vanish. Symptom: the Connect button stays disabled with a red box above it. Fix: use the `http://127.0.0.1:8000` the terminal printed. This replaces WSL-has-no-audio as the environment failure to watch for; WSL now works, because the audio is Windows' problem.
 
 **3. Bluetooth headsets.** Activating the microphone flips many headsets into a low-quality mono profile, and some then fail to open at all. Reconnect, or switch to wired. This is why the pre-event email asks for wired.
 
-**4. The agent talks to itself.** Laptop speakers feeding the laptop microphone. Obvious once you know it; baffling if you don't. Headphones, or turn the volume down.
+**4. The agent talks to itself.** Laptop speakers feeding the laptop microphone, past the echo canceller. Much rarer than it used to be and no longer universal, which makes it *more* confusing when it happens to one person in the room. Headphones, or turn the volume down. Step 1's check reports whether the browser actually granted echo cancellation — worth reading when someone hits this.
 
 **5. A truncated API key.** Copy-paste drops characters or adds a space. Step 1 makes a real authenticated call rather than checking the string is non-empty, so this surfaces immediately with `Deepgram rejected the key`.
 
@@ -86,11 +88,11 @@ The `LAB.md` files pose these; here are the answers, for when you ask the room.
 
 **Step 2** — `listen` configures speech-to-text; the LLM is named under `think`. · The agent discards any media that arrives before the handshake completes, so audio sent early is silently lost.
 
-**Step 3** — Because the greeting starts arriving within milliseconds of `SettingsApplied`, and a stream that doesn't exist yet can't play it.
+**Step 3** — The greeting starts arriving within milliseconds of `SettingsApplied`, and audio with nowhere to go is audio thrown away. The bridge waits for the browser's `start` message before it opens the Deepgram socket for exactly this reason.
 
-**Step 4** — Flux does turn detection inside the model, so there's nothing for client-side VAD to do. · PortAudio reuses that buffer as soon as the callback returns, so you'd be sending a view of memory that's about to be overwritten — garbled or repeated audio.
+**Step 4** — Flux does turn detection inside the model, so there's nothing for client-side VAD to do.
 
-**Step 5** — `stop()` drains the buffer, playing everything already queued before stopping. That's exactly the behavior barge-in is meant to eliminate.
+**Step 5** — Because the pump would immediately refill the browser's queue from the Python-side one. Clearing the far queue first and the near queue second means the agent talks over the user a moment later rather than immediately — which is worse, because it looks like it nearly works. (The PortAudio equivalent: `stop()` drains the buffer, playing everything already queued before stopping. `abort()` throws it away.)
 
 **Step 6** — Raise `eot_threshold`. It demands more confidence before Flux calls the turn over.
 

@@ -3,57 +3,62 @@
 This is where the agent program begins. Step 1 only proved your machine and
 your API key work; nothing from it carries forward.
 
-Run this file as-is and you will see ">> Connection opened" and then, five
-seconds later, ">> Connection closed". A socket is open to Deepgram and nothing
-is being said over it.
+Run this file as-is and it opens a page in your browser with a Connect button
+that does nothing useful yet. Your job is the handshake: describe the agent you
+want, hand it to the bridge, and watch the server confirm it.
 
-Your job is the handshake: describe the agent you want, send it, and wait for
-the server to confirm. No audio yet -- Step 3 handles that.
+No audio yet -- Step 3 handles that. The agent expects a continuous media
+stream and hangs up with CLIENT_MESSAGE_TIMEOUT after about fifteen seconds of
+receiving none, so this step ends by itself. That is the correct ending.
 
 Look for the "TODO (Step 2.x)" blocks below.
+
+Run it with:  uv run steps/02-connect/main.py
 """
 
-import os
-import threading
-import time
-
-from deepgram import DeepgramClient
 from deepgram.agent.v1.types import (
     AgentV1Settings,
     AgentV1SettingsAgent,
-    AgentV1SettingsAgentListen,
-    AgentV1SettingsAgentListenProvider_V2,
+    AgentV1SettingsAgentContextListen,
+    AgentV1SettingsAgentContextListenProvider_V2,
     AgentV1SettingsAudio,
     AgentV1SettingsAudioInput,
     AgentV1SettingsAudioOutput,
 )
-from deepgram.core.events import EventType
 from deepgram.types.speak_settings_v1 import SpeakSettingsV1
 from deepgram.types.speak_settings_v1provider import SpeakSettingsV1Provider_Deepgram
 from deepgram.types.think_settings_v1 import ThinkSettingsV1
 from deepgram.types.think_settings_v1provider import ThinkSettingsV1Provider_OpenAi
 from dotenv import load_dotenv
 
+# The browser bridge. It owns the web server, the WebSocket to the page, and
+# the threads around Deepgram's blocking socket -- everything that is the same
+# in every step. You never edit it, but it is worth reading: web/session.py is
+# where the connection ordering this step depends on actually lives.
+#
+# AgentHandle and Player are unused until you write on_message below, which is
+# why they are imported for you: the types your editor completes against should
+# already be here when you start typing, not something you have to notice.
+from web import AgentHandle, Player, bridge  # noqa: F401 -- used by the on_message you are about to write
+
 # Reads .env from the repository root. python-dotenv walks up from this file's
 # directory, so it finds the same .env no matter which step you run or which
 # directory you run it from.
 load_dotenv()
 
-# Everything the agent sends is either a decoded event model or raw TTS audio.
-AgentMessage = str | bytes
-
-# The audio format, agreed with the server in SETTINGS below and used by the
-# sound device streams from Step 3 onward. Both ends must match exactly.
-SAMPLE_RATE = 24000 # Deepgram's recommended sample rate for voice agents. For telephony, 8000 is recommended.
-CHANNELS = 1 # Deepgram's recommended channel count for voice agents. Mono is the most widely supported format across platforms and languages.
-DTYPE = "int16" # Deepgram's recommended PCM format for voice agents. Raw 16-bit signed integer PCM is the most widely supported format across platforms and languages.
-BLOCK_SIZE = SAMPLE_RATE * 80 // 1000 # 80 ms of audio per block, the chunk size Flux is tuned for. Smaller blocks add websocket overhead; larger ones delay turn detection.
+# The audio format, agreed with the server in SETTINGS below. The browser reads
+# it back from the bridge and configures its microphone and speaker to match,
+# so this constant is the only place it is written down.
+SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For telephony, 8000 is recommended.
 
 # One object describes the entire agent: how it hears, how it thinks, how it
 # speaks. Read it top to bottom -- it is the most important thing in this file,
 # and every later step is either adding to it or reacting to what it produces.
 SETTINGS = AgentV1Settings(
     audio=AgentV1SettingsAudio(
+        # linear16 is raw 16-bit signed PCM, mono. The most widely supported
+        # format across platforms and languages, and what the browser's audio
+        # worklets produce and consume.
         input=AgentV1SettingsAudioInput(encoding="linear16", sample_rate=SAMPLE_RATE),
         output=AgentV1SettingsAudioOutput(encoding="linear16", sample_rate=SAMPLE_RATE),
     ),
@@ -63,10 +68,10 @@ SETTINGS = AgentV1Settings(
         # Listen backend (wss://api.deepgram.com/v2/listen), where the flux
         # models live. Turn detection is part of the model, so its thresholds
         # are configured here -- Step 6 turns those knobs.
-        listen=AgentV1SettingsAgentListen(
-            provider=AgentV1SettingsAgentListenProvider_V2(
+        listen=AgentV1SettingsAgentContextListen(
+            provider=AgentV1SettingsAgentContextListenProvider_V2(
                 type="deepgram",
-                model="flux-general-en", # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
+                model="flux-general-en",  # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
             ),
         ),
         think=ThinkSettingsV1(
@@ -98,110 +103,76 @@ SETTINGS = AgentV1Settings(
 )
 
 
+# ---- TODO (Step 2.1): Handle inbound messages -----------------------------
+# Everything the agent sends arrives in one function. Write it here:
+#
+#   def on_message(agent: AgentHandle, player: Player, message: object) -> None:
+#       """Handle one inbound frame from the agent.
+#
+#       Args:
+#           agent: The connected agent. Unused until Step 8.
+#           player: Where audio is played. Unused until Step 3.
+#           message: Either raw bytes of Flux TTS audio, or a decoded model
+#               whose "type" attribute names the event.
+#       """
+#       if isinstance(message, bytes):
+#           # Flux TTS audio. It is already arriving -- there is just nowhere
+#           # to play it yet. Step 3 fixes that.
+#           return
+#
+#       message_type = getattr(message, "type", "Unknown")
+#
+#       if message_type == "SettingsApplied":
+#           print(">> Settings applied")
+#       elif message_type == "ConversationText":
+#           role = getattr(message, "role", "unknown")
+#           content = getattr(message, "content", "")
+#           print(f"[{role}] {content}")
+#       elif message_type == "Error":
+#           code = getattr(message, "code", "unknown")
+#           description = getattr(message, "description", "unknown error")
+#           print(f">> Agent error: {code} - {description}")
+#       else:
+#           print(f">> {message_type}")
+#
+# Three deliberate choices worth copying into your own agents:
+#
+#   * The bytes check comes first. Audio is not a JSON event and has no
+#     .type -- reaching for one would give you "Unknown" thousands of times
+#     a minute.
+#
+#   * The else branch prints instead of ignoring. Deepgram adds server events
+#     over time; the fallthrough means new ones show up in your console rather
+#     than vanishing. You will use it in Step 5.
+#
+#   * getattr(..., default) everywhere. These models come off the wire with
+#     optional fields -- absent, not empty -- so direct attribute access is a
+#     crash waiting for an unusual turn.
+#
+# The signature is fixed: the bridge calls this with three arguments whether
+# you use them or not. `player` starts earning its place in Step 3.
+# ---------------------------------------------------------------------------
+
+
 def main() -> None:
-    """Open the agent connection, apply SETTINGS, and print what comes back.
+    """Serve the page and run the agent until interrupted.
 
-    Raises:
-        TimeoutError: If the agent does not acknowledge SETTINGS within ten
-            seconds.
+    The bridge does the parts that are identical in every step: it starts a web
+    server, waits for the browser's speaker to be ready before opening the
+    Deepgram socket, applies SETTINGS, and waits for the agent to acknowledge
+    them. The agent discards media until that handshake completes, so the order
+    matters -- see _run() in web/session.py for exactly how it is enforced.
     """
-    # No key means api_key=None, and the failure surfaces later as a confusing
-    # connection error. Step 1 checked this properly -- worth remembering when
-    # something inexplicable happens here.
-    client = DeepgramClient(api_key=os.getenv("DEEPGRAM_API_KEY"))
-
-    with client.agent.v1.connect() as agent:
-        # ---- TODO (Step 2.1): Handle inbound messages ---------------------
-        # First, a way to find out when the handshake has completed. The
-        # messages arrive on a background thread, so the main thread needs
-        # something to block on:
-        #
-        #   settings_applied = threading.Event()
-        #
-        # Then write the handler. Everything the agent sends arrives here:
-        #
-        #   def on_message(message: AgentMessage) -> None:
-        #       """Handle one inbound frame from the agent."""
-        #       if isinstance(message, bytes):
-        #           # Flux TTS audio. It is already arriving -- there is just
-        #           # nowhere to play it yet. Step 3 fixes that.
-        #           return
-        #
-        #       message_type = getattr(message, "type", "Unknown")
-        #
-        #       if message_type == "SettingsApplied":
-        #           print(">> Settings applied")
-        #           settings_applied.set()
-        #       elif message_type == "ConversationText":
-        #           role = getattr(message, "role", "unknown")
-        #           content = getattr(message, "content", "")
-        #           print(f"[{role}] {content}")
-        #       elif message_type == "Error":
-        #           code = getattr(message, "code", "unknown")
-        #           description = getattr(message, "description", "unknown error")
-        #           print(f">> Agent error: {code} - {description}")
-        #       else:
-        #           print(f">> {message_type}")
-        #
-        # Two deliberate choices worth copying into your own agents:
-        #
-        #   * The bytes check comes first. Audio is not a JSON event and has no
-        #     .type -- reaching for one would give you "Unknown" thousands of
-        #     times a minute.
-        #
-        #   * The else branch prints instead of ignoring. Deepgram adds server
-        #     events over time; the fallthrough means new ones show up in your
-        #     console rather than vanishing. You will use it in Step 5.
-        #
-        # Note the getattr(..., default) calls everywhere. These models come off
-        # the wire with optional fields -- absent, not empty -- so direct
-        # attribute access is a crash waiting for an unusual turn.
-        # -------------------------------------------------------------------
-
-        agent.on(EventType.OPEN, lambda _: print(">> Connection opened"))
-        # ---- TODO (Step 2.2): Register the handler ------------------------
-        # Add:  agent.on(EventType.MESSAGE, on_message)
-        #
-        # Put it with the others below. Registration has to happen before
-        # start_listening(), or the first events are delivered to nobody.
-        # -------------------------------------------------------------------
-        agent.on(EventType.CLOSE, lambda _: print(">> Connection closed"))
-        agent.on(EventType.ERROR, lambda error: print(f">> Error: {error}"))
-
-        # The receive loop is blocking, so it gets its own thread. daemon=True
-        # means it will not keep the process alive once main() returns.
-        listener = threading.Thread(target=agent.start_listening, daemon=True)
-        listener.start()
-
-        # ---- TODO (Step 2.3): Send the settings and wait ------------------
-        # Replace the sleep below with:
-        #
-        #   print("Sending agent settings...")
-        #   agent.send_settings(SETTINGS)
-        #
-        #   if not settings_applied.wait(10):
-        #       raise TimeoutError("Timed out waiting for agent settings to apply.")
-        #
-        #   print("\nAgent is live. (Step 3 adds the speaker.)\n")
-        #   time.sleep(10)
-        #
-        # That sleep is ten seconds for a reason: the agent expects a
-        # *continuous* media stream, and hangs up with a CLIENT_MESSAGE_TIMEOUT
-        # error after about fifteen seconds of receiving none. Nothing is
-        # sending audio until Step 4, so this exits before that fires. Raise it
-        # to 20 once, on purpose, to see the error -- recognising it later is
-        # worth the ten seconds.
-        #
-        # Do not skip the wait. The agent throws away any media it receives
-        # before the handshake completes, so every later step opens the
-        # microphone *after* this line. Blocking here is what makes that
-        # ordering guaranteed rather than a race you win most of the time.
-        #
-        # Ten seconds is generous. If it ever fires, the cause is almost always
-        # a rejected setting or a bad API key rather than a slow network.
-        # -------------------------------------------------------------------
-        print("\nConnected. Nothing has been sent yet.\n")
-        time.sleep(5)
+    # ---- TODO (Step 2.2): Hand your agent to the bridge -------------------
+    # Replace the line below with:
+    #
+    #   bridge.run(settings=SETTINGS, on_message=on_message)
+    #
+    # Note what is *not* passed: on_media. Without it the bridge never opens
+    # the microphone at all, which is why this step sends no audio and gets
+    # hung up on. Step 4 adds it.
+    # -----------------------------------------------------------------------
+    bridge.run(settings=SETTINGS, on_message=lambda agent, player, message: None)
 
 
 if __name__ == "__main__":

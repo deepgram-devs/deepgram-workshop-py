@@ -169,7 +169,11 @@ def check_growth(steps: list[Path]) -> list[str]:
 
 
 def check_lint() -> list[str]:
-    """Run ruff over the steps and scripts.
+    """Run ruff over the steps, scripts, and the shared browser bridge.
+
+    web/ is in the list deliberately. Attendees read it, and the repo's whole
+    quality story is docstrings on everything -- letting the one folder nobody
+    edits escape that is worse than the one-word diff.
 
     Returns:
         A list containing ruff's output when it fails, empty when it passes or
@@ -177,7 +181,7 @@ def check_lint() -> list[str]:
     """
     try:
         result = subprocess.run(
-            ["uvx", "ruff", "check", "steps", "scripts"],
+            ["uvx", "ruff", "check", "steps", "scripts", "web"],
             cwd=REPO,
             capture_output=True,
             text=True,

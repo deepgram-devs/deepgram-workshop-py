@@ -3,19 +3,29 @@
 Nothing to write in this step. Run it, and it tells you whether this machine is
 ready for the rest of the workshop.
 
-It checks four things, in the order they will bite you:
+It checks five things, in the order they will bite you:
 
   1. The packages import.
   2. DEEPGRAM_API_KEY exists and Deepgram actually accepts it.
-  3. There is a default input and output device.
-  4. The microphone hears you and the speaker makes noise.
+  3. Your browser can reach the microphone at all -- secure context, and an
+     AudioWorklet to run it in.
+  4. The microphone hears you.
+  5. The speaker makes noise.
+
+The last three happen in a browser page this script serves, because that is
+where the rest of the workshop's audio happens. Checking them anywhere else
+would be checking something other than what you are about to use.
 
 Audio problems are the single most common way a voice workshop loses twenty
 minutes, and they are far easier to diagnose here than tangled up with a
-WebSocket. On macOS this is also what triggers the microphone permission
-prompt -- better now than mid-conversation in Step 4.
+WebSocket. The browser check is also what triggers the microphone permission
+prompt.
 
-Run it with:  uv run steps/01-setup/main.py
+Run it with:      uv run steps/01-setup/main.py
+PortAudio path:   uv run steps/01-setup/main.py --local
+
+The --local flag checks the system microphone and speaker through PortAudio
+instead. Use it if you plan to run the later steps with --local.
 """
 
 import os
@@ -23,19 +33,20 @@ import platform
 import sys
 import time
 
-import numpy as np
-import sounddevice as sd
 from deepgram import DeepgramClient
 from dotenv import load_dotenv
+
+from web import bridge
 
 load_dotenv()
 
 # WSL reports itself as Linux, but its audio needs a PulseAudio-to-ALSA bridge
 # that native Linux does not. "microsoft" in the kernel release is the standard
-# way to tell the two apart.
+# way to tell the two apart. Only --local cares: the browser path goes through
+# Windows, not through WSL's audio stack, which is one of its quieter benefits.
 IS_WSL = sys.platform == "linux" and "microsoft" in platform.uname().release.lower()
 
-SAMPLE_RATE = 24000 # Matches the rate the agent uses from Step 2 onward.
+SAMPLE_RATE = 24000  # Matches the rate the agent uses from Step 2 onward.
 CHANNELS = 1
 DTYPE = "int16"
 INT16_MAX = 32768.0
@@ -53,7 +64,11 @@ FAIL = " FAIL "
 
 
 def audio_hint() -> None:
-    """Print the audio fix most likely to apply on this platform."""
+    """Print the audio fix most likely to apply on this platform.
+
+    Only reached on the --local path. The browser path fails differently, and
+    its page says what to do about each case.
+    """
     if sys.platform == "darwin":
         print("         macOS: System Settings > Privacy & Security > Microphone,")
         print("         and enable your terminal or editor. Run this again after.")
@@ -62,22 +77,23 @@ def audio_hint() -> None:
         print("         for ALSA. Bridge them:")
         print("           sudo apt install -y libasound2-plugins")
         print("           printf 'pcm.!default { type pulse }\\nctl.!default { type pulse }\\n' > ~/.asoundrc")
-        print("         See steps/01-setup/LAB.md for the full WSL walkthrough.")
+        print("         Or drop --local and use the browser, which needs none of this.")
     elif sys.platform == "linux":
         print("         Linux: install the PortAudio and ALSA userspace packages:")
         print("           sudo apt install -y libportaudio2 libasound2-plugins alsa-utils")
-        print("         On a headless server there is no audio device at all --")
-        print("         this workshop needs a real microphone and speaker.")
+        print("         Or drop --local and use the browser, which needs none of this.")
     elif sys.platform == "win32":
         print("         Windows: Settings > Privacy & security > Microphone, and")
         print("         allow desktop apps to access it.")
 
 
-def check_key() -> str | None:
+def check_key() -> tuple[bool, str]:
     """Confirm DEEPGRAM_API_KEY is set and that Deepgram accepts it.
 
     Returns:
-        The API key if Deepgram accepted it, otherwise None.
+        Whether the key works, and a one-line explanation. The explanation is
+        shown in the terminal and again on the browser page, so it is written
+        to be read by someone who has not seen the other one.
     """
     key = os.getenv("DEEPGRAM_API_KEY")
 
@@ -86,7 +102,7 @@ def check_key() -> str | None:
         print("         Copy .env.example to .env and paste your key into it:")
         print("           cp .env.example .env")
         print("         Get a free key at https://console.deepgram.com/signup?jump=keys")
-        return None
+        return False, "Not set. Copy .env.example to .env and paste your key into it."
 
     print(f"[{PASS}] DEEPGRAM_API_KEY found ({key[:4]}...{key[-4:]})")
 
@@ -97,20 +113,22 @@ def check_key() -> str | None:
     except Exception as error:  # noqa: BLE001 -- any failure here means "unusable key"
         print(f"[{FAIL}] Deepgram rejected the key: {error}")
         print("         Check for a stray space or a truncated paste in .env.")
-        return None
+        return False, f"Deepgram rejected it: {error}. Check for a stray space or a truncated paste in .env."
 
     names = [p.name for p in (getattr(projects, "projects", None) or []) if p.name]
     where = f" (project: {names[0]})" if names else ""
     print(f"[{PASS}] Deepgram accepted the key{where}")
-    return key
+    return True, f"Accepted by Deepgram{where}"
 
 
 def check_devices() -> bool:
-    """Print the default input and output devices.
+    """Print the default input and output devices. The --local path only.
 
     Returns:
         True if both a default input and a default output device exist.
     """
+    import sounddevice as sd
+
     try:
         default_input, default_output = sd.default.device
         devices = sd.query_devices()
@@ -147,9 +165,14 @@ def check_devices() -> bool:
 def check_microphone() -> bool:
     """Capture a few seconds of audio and show a live level meter.
 
+    The --local path only.
+
     Returns:
         True if the captured audio ever exceeded GOOD_PEAK.
     """
+    import numpy as np
+    import sounddevice as sd
+
     peak = 0.0
 
     def on_audio(indata: np.ndarray, _frames: int, _time_info: object, _status: object) -> None:
@@ -172,7 +195,10 @@ def check_microphone() -> bool:
 
     try:
         with sd.InputStream(
-            samplerate=SAMPLE_RATE, channels=CHANNELS, dtype=DTYPE, callback=on_audio,
+            samplerate=SAMPLE_RATE,
+            channels=CHANNELS,
+            dtype=DTYPE,
+            callback=on_audio,
         ):
             deadline = time.monotonic() + RECORD_SECONDS
             while time.monotonic() < deadline:
@@ -202,9 +228,14 @@ def check_microphone() -> bool:
 def check_speaker() -> bool:
     """Play a short tone so the user can confirm output works.
 
+    The --local path only.
+
     Returns:
         True if playback completed without raising.
     """
+    import numpy as np
+    import sounddevice as sd
+
     samples = np.arange(int(SAMPLE_RATE * TONE_SECONDS))
     # Quarter amplitude -- loud enough to hear, quiet enough in headphones.
     wave = 0.25 * np.sin(2 * np.pi * TONE_HZ * samples / SAMPLE_RATE)
@@ -226,34 +257,51 @@ def check_speaker() -> bool:
     return True
 
 
+def check_local_audio() -> bool:
+    """Run the PortAudio device, microphone, and speaker checks.
+
+    Returns:
+        True if every check passed.
+    """
+    try:
+        import sounddevice  # noqa: F401 -- imported to prove it loads
+    except OSError as error:
+        print(f"[{FAIL}] sounddevice could not load PortAudio: {error}")
+        audio_hint()
+        return False
+
+    if not check_devices():
+        return False
+    return check_microphone() and check_speaker()
+
+
 def main() -> None:
     """Run every setup check and report whether this machine is ready."""
     print("Deepgram Voice Agent Workshop -- Step 1: Setup check")
     print("=" * 55)
     print(f"  Python {sys.version.split()[0]} on {sys.platform}\n")
 
-    key_ok = check_key() is not None
-    print()
-    devices_ok = check_devices()
+    key_ok, key_detail = check_key()
 
-    microphone_ok = speaker_ok = False
-    if devices_ok:
-        microphone_ok = check_microphone()
-        speaker_ok = check_speaker()
+    if "--local" in sys.argv:
+        print()
+        audio_ok = check_local_audio()
+        print("\n" + "=" * 55)
+        if key_ok and audio_ok:
+            print("All checks passed. You are ready for Step 2:")
+            print("  uv run steps/02-connect/main.py --local")
+            return
+        print("Some checks did not pass -- see the notes above.")
+        print("If you are in a workshop, this is the moment to raise your hand.")
+        # A failed setup check is a real failure, so exit non-zero. It also
+        # means chaining this into the next step stops here rather than failing
+        # more confusingly one step later.
+        sys.exit(1)
 
-    print("\n" + "=" * 55)
-
-    if key_ok and devices_ok and microphone_ok and speaker_ok:
-        print("All checks passed. You are ready for Step 2:")
-        print("  uv run steps/02-connect/main.py")
-        return
-
-    print("Some checks did not pass -- see the notes above.")
-    print("If you are in a workshop, this is the moment to raise your hand.")
-    # A failed setup check is a real failure, so exit non-zero. It also means
-    # "uv run steps/01-setup/main.py && uv run steps/02-connect/main.py" stops
-    # here rather than failing more confusingly one step later.
-    sys.exit(1)
+    # The browser half. run_check blocks until Ctrl+C, so nothing after it
+    # runs -- the page reports its own verdict, which is where the remaining
+    # three checks live.
+    bridge.run_check(status={"key_ok": key_ok, "key_detail": key_detail})
 
 
 if __name__ == "__main__":

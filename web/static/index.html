@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Deepgram Voice Agent Workshop</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Voice agent</h1>
+        <p class="subtitle">
+          This page is the microphone and the speaker. Everything the agent does
+          is running in your terminal.
+        </p>
+      </header>
+
+      <section class="controls">
+        <button id="connect" type="button">Connect</button>
+        <span id="status" class="pill" data-tone="idle">not connected</span>
+      </section>
+
+      <div class="level" aria-hidden="true"><div id="level-bar"></div></div>
+
+      <p id="banner" class="banner" data-tone="error" hidden></p>
+
+      <div id="activity" class="activity">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="activity-label">agent</span>
+      </div>
+
+      <section id="transcript" class="transcript" aria-live="polite"></section>
+
+      <footer>
+        <p>
+          Wearing headphones still helps. Your browser cancels most of the echo,
+          but not all of it.
+        </p>
+      </footer>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

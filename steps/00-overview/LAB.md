@@ -58,7 +58,7 @@ That single responsibility gets its own step ([Step 5](../05-barge-in/LAB.md)), 
 By the end of Step 8, roughly 350 lines that:
 
 - Open a WebSocket and negotiate an agent configuration
-- Stream microphone audio without blocking PortAudio's realtime thread
+- Stream microphone audio from a browser without blocking the thread that plays the reply
 - Play the agent's speech as it arrives
 - Cut playback the instant you interrupt
 - Let you tune how patient the agent is, and measure what it costs

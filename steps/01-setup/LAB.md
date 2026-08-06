@@ -4,15 +4,17 @@
 
 **You'll learn**
 
-- Which audio devices your code will actually use, and how to change them
 - Why `DEEPGRAM_API_KEY` is the only credential this workshop needs
-- What a working microphone looks like from Python's side of the glass
+- What a working microphone looks like from the browser's side of the glass
+- The two browser capabilities everything after this depends on
 
 ## Why this step exists
 
-Voice work fails in a specific, predictable order: the key is wrong, the wrong microphone is selected, or the OS never granted permission. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
+Voice work fails in a specific, predictable order: the key is wrong, the browser never got microphone permission, or the page is being served from somewhere the browser refuses to trust with a microphone at all. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
 
-On macOS, this step also triggers the microphone permission prompt. Far better to see that dialog now than halfway through a conversation in Step 4.
+This step also triggers your browser's microphone permission prompt.
+
+The audio half of this check runs **in a browser page**, because that is where the rest of the workshop's audio runs. Checking it anywhere else would be checking something other than what you are about to use.
 
 ## Do this
 
@@ -47,24 +49,28 @@ New Deepgram accounts get **$200 in credit** applied automatically. This worksho
 uv run steps/01-setup/main.py
 ```
 
-Speak when it asks you to, and listen for the tone.
+It checks your key in the terminal, then opens a page. Press **Run the audio checks**, allow the microphone when your browser asks, speak when it tells you to, and listen for the tone. Ctrl+C in the terminal when you're done.
 
 ## Verify
 
-A clean run looks like this:
+The terminal shows:
 
 ```
 [  OK  ] DEEPGRAM_API_KEY found (84de...c2db)
 [  OK  ] Deepgram accepted the key (project: Your Project)
-[  OK  ] Input : MacBook Pro Microphone (1 ch)
-[  OK  ] Output: MacBook Pro Speakers (2 ch)
-[  OK  ] Microphone heard you (peak 0.34)
-[  OK  ] Speaker played a tone -- you should have heard it
-
-All checks passed. You are ready for Step 2:
 ```
 
-Every line reads `OK`, and you heard the tone. Anything else, work through the fixes below.
+and the page shows five green rows:
+
+```
+OK   Secure context      http://127.0.0.1:8000 is a secure context
+OK   Audio support       AudioWorklet and getUserMedia are available
+OK   Deepgram API key    Accepted by Deepgram (project: Your Project)
+OK   Microphone          Heard you (peak 0.34).
+OK   Speaker             Played a tone -- you should have heard it
+```
+
+Every row reads `OK`, and you heard the tone. Anything else, work through the fixes below.
 
 ## Stuck?
 
@@ -72,25 +78,35 @@ Every line reads `OK`, and you heard the tone. Anything else, work through the f
 
 **`Deepgram rejected the key`** — Almost always a truncated paste or a trailing space. Copy it again from the console.
 
-**`Microphone opened but heard almost nothing`** — Three usual causes, in order of likelihood: you're muted, the wrong input device is selected, or macOS never granted microphone access. Check **System Settings → Privacy & Security → Microphone** and enable your terminal or editor, then re-run.
+**`Secure context` fails** — You opened the page on a LAN address like `192.168.1.5:8000`. Browsers only hand out microphone access on a secure context, and a bare IP is not one. Use `http://127.0.0.1:8000` — the address the terminal printed.
 
-**Bluetooth headphones behaving strangely** — Many headsets expose a low-quality mono profile when their microphone activates. Disconnect and reconnect the headset, or use wired headphones for the workshop. Wired headphones also spare you the speaker-feeding-microphone loop in Step 5.
+**`Permission denied`** — Your browser is blocking the microphone for this site. Click the icon at the left of the address bar, allow it, and press the button again. On macOS also check **System Settings → Privacy & Security → Microphone** and confirm your browser is enabled there.
 
-**Wrong device selected entirely** — `sounddevice` follows your operating system's default. Change the default in your OS sound settings and re-run; there's nothing to edit in the code.
+**`Opened, but heard almost nothing`** — Two usual causes: you're muted, or the browser picked the wrong input. Change the input in your OS sound settings, reload the page, and try again.
 
-### Linux
+**`Echo cancellation is off`** — Your browser did not grant it. Everything still works; wear headphones, and expect Step 5 to be noisier than it should be.
 
-**`Could not query audio devices` or no devices listed** — Install ALSA's userspace pieces and the PulseAudio plugin:
+**`Browser gave 48000 Hz instead of 24000 Hz`** — Mostly iOS Safari. Not a failure: the audio worklets resample instead. Quality drops a little and nothing else changes.
+
+**Bluetooth headphones behaving strangely** — Many headsets expose a low-quality mono profile when their microphone activates, and some renegotiate the sample rate mid-session. Wired headphones are the reliable choice for the workshop, and they also spare you the speaker-feeding-microphone loop in Step 5.
+
+**Nothing opens** — Some environments have no browser to open. The terminal prints the URL; open it yourself, or pass `--no-open` to stop it trying.
+
+### If you plan to use `--local`
+
+Every step also runs against the system microphone and speaker through PortAudio, with `--local`. If you intend to work that way, check it now:
+
+```bash
+uv run steps/01-setup/main.py --local
+```
+
+**`Could not query audio devices` on Linux** — Install ALSA's userspace pieces and the PulseAudio plugin:
 
 ```bash
 sudo apt install -y libportaudio2 libasound2-plugins alsa-utils
 ```
 
-**Headless server or container** — There genuinely is no audio device. This workshop needs a real microphone and speaker; run it on a desktop machine.
-
-### WSL (Windows Subsystem for Linux)
-
-WSL routes audio through PulseAudio, but PortAudio only looks for ALSA. Bridge the two:
+**WSL** routes audio through PulseAudio, but PortAudio only looks for ALSA. Bridge the two:
 
 ```bash
 sudo apt install -y libasound2-plugins
@@ -100,13 +116,11 @@ ctl.!default { type pulse }
 EOF
 ```
 
-Then re-run the check. If the microphone still reads silent, confirm Windows itself has microphone access enabled for your terminal under **Settings → Privacy & security → Microphone**.
-
-WSL audio is the single most common environment failure in this workshop. If it resists, running natively on Windows with `uv` works without any of this.
+WSL audio used to be the single most common environment failure in this workshop. It is now avoidable: drop `--local` and the audio goes through your Windows browser instead, which needs none of the above.
 
 ## Going further
 
-Run `uv run python -c "import sounddevice; print(sounddevice.query_devices())"` to see every device on your machine, not just the defaults. The index in that list is what you'd pass as `device=` to any `sounddevice` stream if you ever need to override the default explicitly.
+Open your browser's dev tools (F12) on the check page and watch the console while you run it. You'll see the sample rate the browser actually gave you. Then look at the Network tab — `worklets.js` is fetched and handed to the audio thread, which is the only file in this workshop that does not run on the main thread.
 
 ---
 

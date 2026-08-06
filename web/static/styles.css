@@ -1,0 +1,255 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #14161a;
+  --muted: #62676f;
+  --line: #e2e5ea;
+  --accent: #1355ff;
+  --live: #0f9d58;
+  --error: #c0392b;
+  --surface: #f6f7f9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101215;
+    --fg: #e8eaed;
+    --muted: #9aa0a8;
+    --line: #262a30;
+    --accent: #6f9bff;
+    --live: #4ac07d;
+    --error: #ff7a6b;
+    --surface: #181b20;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 3rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 0 0 1.75rem;
+  color: var(--muted);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.55rem 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pill {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.pill[data-tone="busy"] {
+  color: var(--accent);
+  border-color: currentColor;
+}
+
+.pill[data-tone="live"] {
+  color: var(--live);
+  border-color: currentColor;
+}
+
+.pill[data-tone="error"] {
+  color: var(--error);
+  border-color: currentColor;
+}
+
+.level {
+  height: 4px;
+  margin: 1.25rem 0 0;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+#level-bar {
+  height: 100%;
+  width: 0;
+  background: var(--live);
+  transition: width 60ms linear;
+}
+
+.banner {
+  margin: 1.25rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+.banner[data-tone="info"] {
+  color: var(--muted);
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.banner[data-tone="pass"] {
+  color: var(--live);
+  background: var(--surface);
+}
+
+.activity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.activity[data-thinking="true"] .dot {
+  background: var(--accent);
+}
+
+.activity[data-speaking="true"] .dot {
+  background: var(--live);
+}
+
+.activity::after {
+  content: attr(data-latency);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.transcript {
+  min-height: 14rem;
+  max-height: 26rem;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+}
+
+.who {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: lowercase;
+  padding-top: 0.15rem;
+}
+
+.line[data-role="assistant"] .who {
+  color: var(--accent);
+}
+
+.checks {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+.checks li {
+  display: grid;
+  grid-template-columns: 2.5rem 10rem 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.checks li:last-child {
+  border-bottom: 0;
+}
+
+.mark {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.checks li[data-state="pass"] .mark {
+  color: var(--live);
+}
+
+.checks li[data-state="warn"] .mark {
+  color: var(--accent);
+}
+
+.checks li[data-state="fail"] .mark {
+  color: var(--error);
+}
+
+.detail {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+#verdict[data-tone="pass"] {
+  color: var(--live);
+}
+
+#verdict[data-tone="warn"] {
+  color: var(--accent);
+}
+
+#verdict[data-tone="error"] {
+  color: var(--error);
+}
+
+footer {
+  margin-top: 1.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+footer p {
+  margin: 0;
+}

@@ -32,7 +32,7 @@ Both are optional. Omitting them — as this file does right now — uses the se
 
 **TODO 6.1 — Add the constants.** `EOT_THRESHOLD = 0.7` and `EOT_TIMEOUT_MS = 5000`, at module level with the other configuration.
 
-**TODO 6.2 — Wire them into the listen provider.** Pass both into `AgentV1SettingsAgentListenProvider_V2`.
+**TODO 6.2 — Wire them into the listen provider.** Pass both into `AgentV1SettingsAgentContextListenProvider_V2`.
 
 Values outside the valid ranges don't fail the handshake. They come back as a `Warning` message, which nothing handles yet — Step 7 adds that branch. If a value seems to do nothing, that's usually why.
 

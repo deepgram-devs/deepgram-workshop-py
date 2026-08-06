@@ -6,15 +6,44 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "deepgram-sdk==7.6.0",
+    "fastapi==0.121.2",
     "numpy==2.5.1",
     "python-dotenv==1.2.2",
+    # The browser handles audio by default. sounddevice stays for --local, the
+    # fallback that puts PortAudio back in charge. See web/README.md.
     "sounddevice==0.5.5",
+    "uvicorn==0.40.0",
+    # uvicorn picks a WebSocket implementation by import probing, and prefers
+    # the one built on `websockets` -- which imports websockets.legacy, removed
+    # in websockets 17. deepgram-sdk pins websockets 17, so that path is an
+    # ImportError here. wsproto is pure-Python, sans-IO, and conflicts with
+    # nothing; web/bridge.py names it explicitly rather than leaving it to luck.
+    "wsproto==1.2.0",
     # Step 8 uses zoneinfo. Linux and macOS read the operating system's
     # timezone database; Windows has none, so zoneinfo falls back to this
     # package. Without it, every ZoneInfo lookup on Windows fails -- including
     # the UTC fallback meant to catch that failure.
     "tzdata==2025.2; sys_platform == 'win32'",
 ]
+
+# Every step imports `web`, the shared browser bridge. Declaring a build system
+# is what makes `uv sync` install this project into the venv, which is what puts
+# `web` on sys.path from inside steps/NN/main.py -- whose own sys.path[0] is its
+# containing folder, not the repo root. uv installs it editable, so edits under
+# web/ take effect without re-syncing.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["web"]
+
+[tool.ruff]
+# 120, not ruff's default 88. These files are read on a projector as much as in
+# an editor, and the wider budget is what keeps a settings block one line per
+# field instead of one line per parenthesis. Trailing comments still run past it
+# -- ruff never wraps a comment -- but every line of code fits.
+line-length = 120
 
 [tool.ruff.lint]
 extend-select = ["D"]

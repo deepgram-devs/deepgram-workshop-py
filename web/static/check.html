@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Setup check - Deepgram Voice Agent Workshop</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Setup check</h1>
+        <p class="subtitle">
+          Five checks, in the order they will bite you. Audio problems are the
+          single most common way a voice workshop loses twenty minutes, and they
+          are far easier to diagnose here than tangled up with a WebSocket.
+        </p>
+      </header>
+
+      <ol id="checks" class="checks">
+        <li data-check="secure"><span class="mark">·</span><span class="what">Secure context</span><span class="detail"></span></li>
+        <li data-check="support"><span class="mark">·</span><span class="what">Audio support</span><span class="detail"></span></li>
+        <li data-check="key"><span class="mark">·</span><span class="what">Deepgram API key</span><span class="detail"></span></li>
+        <li data-check="mic"><span class="mark">·</span><span class="what">Microphone</span><span class="detail"></span></li>
+        <li data-check="speaker"><span class="mark">·</span><span class="what">Speaker</span><span class="detail"></span></li>
+      </ol>
+
+      <div class="level" aria-hidden="true"><div id="level-bar"></div></div>
+
+      <section class="controls">
+        <button id="run" type="button">Run the audio checks</button>
+        <span id="status" class="pill" data-tone="idle">not started</span>
+      </section>
+
+      <p id="banner" class="banner" data-tone="error" hidden></p>
+
+      <footer>
+        <p id="verdict"></p>
+        <p>
+          This is also what triggers your browser's microphone permission
+          prompt.
+        </p>
+      </footer>
+    </main>
+
+    <script src="/check.js"></script>
+  </body>
+</html>

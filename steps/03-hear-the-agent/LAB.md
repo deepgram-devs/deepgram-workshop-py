@@ -4,8 +4,8 @@
 
 **You'll learn**
 
-- Why a "raw" PortAudio stream is the natural fit for socket audio
-- What happens when your audio format and the agent's disagree
+- Why streaming audio always needs a queue, and who owns it
+- The difference between "the agent stopped sending" and "you stopped hearing"
 - Why an exception in a message handler ends the entire call
 
 ## Start here
@@ -14,7 +14,7 @@
 uv run steps/03-hear-the-agent/main.py
 ```
 
-Everything from Step 2 works. The agent connects, applies settings, and announces itself in the console. Audio for that greeting is arriving on the socket right now, and the `isinstance(message, bytes)` branch is throwing every frame away.
+Press **Connect**. Everything from Step 2 works: the agent connects, applies settings, and announces itself in the console. Audio for that greeting is arriving on the socket right now, and the `isinstance(message, bytes)` branch is throwing every frame away.
 
 This step gives it somewhere to go.
 
@@ -22,62 +22,72 @@ This step gives it somewhere to go.
 
 Deepgram sends TTS audio as raw PCM frames matching the `output` format you declared in `SETTINGS`: 24 kHz, mono, signed 16-bit. No container, no header, no decoding — the bytes off the socket are already playable samples.
 
-That maps directly onto `sd.RawOutputStream`. The "raw" variant accepts `bytes` rather than NumPy arrays, so audio goes from socket to speaker with nothing in between. Hand it a chunk, PortAudio queues it, your speaker plays it.
+Your handler's second argument, `player`, is where they go. One call:
 
-The three constants at the top of the file (`SAMPLE_RATE`, `CHANNELS`, `DTYPE`) have to match the `output` settings exactly. When they disagree you don't get an error — you get audio at the wrong speed and pitch, which is a memorable way to learn this lesson and an annoying way to spend ten minutes.
+```python
+player.send(message)
+```
 
-> **Check yourself** — Why do you open the speaker stream *before* sending settings rather than after?
+What makes that one line rather than fifty is a queue, and it is worth knowing where it is, because you will write one yourself the next time you build a voice agent without a bridge like this.
+
+Audio arrives from the network in **bursts** — several hundred milliseconds at a time, whenever Flux finishes synthesising a chunk. It is consumed at a **constant** rate: your sound hardware asks for exactly 128 samples every 5.3 ms and will not wait. Something has to absorb that difference, and if it ever runs dry you hear a click.
+
+Open [`web/static/worklets.js`](../../web/static/worklets.js) and read `PlaybackProcessor`. It is about forty lines and it is the whole story:
+
+- `this.queue` — an array of chunks waiting to be heard.
+- `process()` — hands the hardware exactly as many samples as it asked for, then fills any shortfall with **silence** rather than stale audio.
+- `return true` at the end, unconditionally. Return `false` and the browser garbage-collects the node after one idle quantum, and the next reply has nowhere to go.
+
+That queue is why `AgentAudioDone` does not mean "the agent stopped talking." It means the agent stopped *sending*. There may still be a second of speech queued ahead of you. Step 5 is entirely about that gap.
+
+> **Check yourself** — The bridge waits for the browser's speaker to exist before it opens the Deepgram socket. What would go wrong if it connected first?
 
 ## Do this
 
-**TODO 3.1 — Import `sounddevice`.** It goes with the other third-party imports, alphabetized. `sounddevice` ships PortAudio binaries inside its wheels for Linux, macOS, and Windows, which is the entire reason this workshop uses it — there's nothing to install at the system level.
+**TODO 3.1 — Play the audio.** Replace the discarded branch with `player.send(message)`.
 
-**TODO 3.2 — Open the speaker.** Create the stream and start it *before* the handlers below it. With a greeting configured, the first audio frame lands within milliseconds of `SettingsApplied`, so the stream needs to already exist.
+Notice what you are *not* writing: no error handling, no buffering, no device setup. A chunk that cannot be played is the bridge's problem. Look at `LocalPlayer.send` in [`web/audio.py`](../../web/audio.py) to see the version that does have to care — it catches `PortAudioError` and drops the chunk rather than letting it fly, because that handler runs inside the SDK's receive loop, and that loop wraps everything in a single `try`/`except`. Any exception escaping it gets reported as `EventType.ERROR` and closes the connection. Dropping one 80 ms chunk beats ending the call.
 
-**TODO 3.3 — Play the audio.** Write the frames to the speaker inside a `try`/`except sd.PortAudioError`.
-
-Catch that exception rather than letting it fly. Your handler runs inside the SDK's receive loop, and that loop wraps everything in a single `try`/`except` — so any exception escaping your handler gets reported as `EventType.ERROR` and closes the connection. Dropping one 80 ms chunk beats ending the call.
-
-**TODO 3.4 — Narrate the turn.** Give `AgentThinking`, `AgentStartedSpeaking`, and `AgentAudioDone` their own branches so the console reads like a transcript of what the agent is doing.
+**TODO 3.2 — Narrate the turn.** Give `AgentThinking`, `AgentStartedSpeaking`, and `AgentAudioDone` their own branches so the console reads like a transcript of what the agent is doing.
 
 `LatencyReport` gets an explicit `pass`. It fires once per turn, and left to the fallthrough it clutters the transcript. Step 6 turns it into something you'll actually want.
 
-**TODO 3.5 — Release the device.** Add `finally: speaker.stop()` so the stream closes even after Ctrl+C. Leaving PortAudio streams open is how you end up restarting your terminal to get audio back.
-
 ## Verify
 
-You hear the greeting spoken aloud, and the console shows:
+You hear the greeting spoken aloud, the transcript appears on the page, and the console shows:
 
 ```
 >> Settings applied
 
-Listening to the greeting... (Step 4 opens the microphone)
-
 [assistant] Hello! I'm a Deepgram voice agent. What would you like to talk about?
+>> Agent started speaking
 >> Agent finished speaking
+>> Agent error: CLIENT_MESSAGE_TIMEOUT - ...
 >> Connection closed
 ```
 
-`>> AgentAudioDone` now reads `>> Agent finished speaking`, and the timing lines up with the audio ending.
+`>> AgentAudioDone` now reads `>> Agent finished speaking`. Watch when it prints: **before** the audio finishes playing. That is the queue.
+
+The `CLIENT_MESSAGE_TIMEOUT` at the end is expected and is the last time you will see it. The agent wants a continuous media stream and this step sends none, so it hangs up after about fifteen seconds. Step 4 fixes that by giving it something to listen to.
 
 > **⏸ Pause — check in with the instructor**
 > Everyone should hear the greeting out loud. Silent machines need fixing now — Step 4 is much harder to debug when you cannot hear anything.
 
 ## Stuck?
 
-**Silence, but no errors** — Check your output device with `uv run steps/01-setup/main.py`. Then confirm `speaker.start()` is actually being called; creating the stream isn't enough.
+**Silence, but no errors** — Check the browser console (F12). Then re-run `uv run steps/01-setup/main.py` and press "Run the audio checks"; the tone test tells you whether the problem is this step or your output device.
 
-**Audio plays too fast, too slow, or chipmunk-pitched** — Your stream's `samplerate` doesn't match the `output` sample rate in `SETTINGS`. Both are 24000.
+**Nothing happens when you press Connect** — Look for a red box on the page. The most common cause is opening the page on a LAN address rather than `127.0.0.1`; browsers only grant microphone and AudioWorklet access on a secure context.
 
-**Stuttering or crackling** — Another process is competing for the audio device, or you added something slow inside the bytes branch. That branch runs on the SDK's receive loop; keep it to the write.
+**Audio plays too fast, too slow, or chipmunk-pitched** — The page and `SETTINGS` disagree about the sample rate. Both read it from `SAMPLE_RATE`, so this should be impossible; if you see it, check the browser console for a warning about the rate the browser actually gave you.
 
-**`>> Dropped audio chunk`** — Your error handling is working. An occasional one is fine; a flood means the device is struggling.
+**Stuttering or crackling** — You added something slow inside the bytes branch. It runs on the SDK's receive loop; keep it to the one call.
 
 `steps/04-talk-to-the-agent/main.py` is this step, finished.
 
 ## Going further
 
-Comment out `speaker.start()` and run it. The stream exists, the writes go somewhere, and nothing plays — a good reminder that PortAudio streams are inert until started.
+In `PlaybackProcessor.process`, change the underrun fill from `0` to something audible — repeat the last sample instead of writing silence. Run it and listen to a reply. That buzz is what a naive playback queue sounds like when it runs dry, and it is why the real one writes silence.
 
 ---
 
