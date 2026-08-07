@@ -14,9 +14,10 @@ Checks, in order of how badly each one fails a room:
   2. No "TODO (Step N.x)" marker survives into folder N+1. A marker that leaks
      means the answer key is not actually finished.
   3. Every step folder has a LAB.md, and 99-final has a README.md.
-  4. Each step's growth over its predecessor is plausible -- a step that got
+  4. Step 1's setup check names the same models Step 2 configures.
+  5. Each step's growth over its predecessor is plausible -- a step that got
      *smaller* almost always means an edit landed in the wrong folder.
-  5. ruff passes on all of them, using the config in pyproject.toml.
+  6. ruff passes on all of them, using the config in pyproject.toml.
 
 What it deliberately does not check: whether the code in step N+1 is a correct
 implementation of step N's TODOs. Nothing but reading it will tell you that.
@@ -140,6 +141,34 @@ def check_lab_links(_steps: list[Path]) -> list[str]:
     return failures
 
 
+def check_setup_models(_steps: list[Path]) -> list[str]:
+    """Confirm Step 1 checks the same models Step 2 configures.
+
+    Step 1 opens the agent connection for real, so it names the three models
+    itself rather than importing another step. That is the second place they
+    are written down, and the failure it invites is a room whose setup check
+    passes on models the workshop no longer uses.
+
+    Returns:
+        A list of failure messages, empty when the two agree.
+    """
+    setup = (STEPS / "01-setup" / "main.py").read_text()
+    connect = (STEPS / "02-connect" / "main.py").read_text()
+
+    failures = []
+    for constant in ("LISTEN_MODEL", "THINK_MODEL", "SPEAK_MODEL"):
+        match = re.search(rf'^{constant} = "([^"]+)"', setup, re.MULTILINE)
+        if match is None:
+            failures.append(f"01-setup/main.py no longer defines {constant}")
+        elif f'model="{match.group(1)}"' not in connect:
+            failures.append(
+                f"01-setup/main.py checks {constant} = {match.group(1)!r}, which "
+                f"02-connect/main.py does not configure. The setup check is "
+                f"proving the wrong pipeline works.",
+            )
+    return failures
+
+
 def check_growth(steps: list[Path]) -> list[str]:
     """Flag any step whose main.py shrank relative to the step before it.
 
@@ -211,6 +240,7 @@ def main() -> None:
         ("no leaked TODO markers", lambda: check_marker_leakage(steps)),
         ("docs present", lambda: check_docs(steps)),
         ("doc links resolve", lambda: check_lab_links(steps)),
+        ("setup checks the right models", lambda: check_setup_models(steps)),
         ("steps grow", lambda: check_growth(steps)),
         ("ruff", check_lint),
     ):

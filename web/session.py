@@ -24,10 +24,10 @@ import threading
 from collections.abc import Callable
 from typing import Any, Protocol
 
-from deepgram import DeepgramClient
 from deepgram.core.events import EventType
 
 from .audio import Player
+from .region import DEFAULT_REGION, configured_region, deepgram_client, describe
 
 # About twenty seconds of microphone audio. Reaching this means the Deepgram
 # socket has stopped draining -- the connection is dying and the backlog is
@@ -224,7 +224,19 @@ class AgentSession:
             )
             return
 
-        client = DeepgramClient(api_key=api_key)
+        # Where this connection goes is DEEPGRAM_REGION's business, not the
+        # step's -- see web/region.py. An unusable value fails here rather than
+        # quietly falling back to global.
+        try:
+            region = configured_region()
+            client = deepgram_client(api_key, region=region)
+        except ValueError as error:
+            self._fail(str(error))
+            return
+
+        if region != DEFAULT_REGION:
+            print(f">> Region: {describe(region)}")
+
         sender: threading.Thread | None = None
 
         try:

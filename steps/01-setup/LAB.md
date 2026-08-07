@@ -5,6 +5,7 @@
 **You'll learn**
 
 - Why `DEEPGRAM_API_KEY` is the only credential this workshop needs
+- That a working key and a working agent are two different questions
 - What a working microphone looks like from the browser's side of the glass
 - The two browser capabilities everything after this depends on
 
@@ -38,6 +39,8 @@ That key is the only credential you need. The agent you build uses OpenAI's `gpt
 
 Deepgram applies **$200 in credit** to new accounts automatically. This workshop costs well under a dollar, so you'll have plenty left to keep building afterward.
 
+`.env` also holds `DEEPGRAM_REGION`, which decides where your audio is processed — `global` by default, or `eu` or `au` for the endpoints that keep it inside those geographies. Leave it blank unless your instructor says otherwise. It's worth knowing it exists: your key works in every region, no code in this workshop names one, and moving between them is this single line.
+
 > **Check yourself** — How many API keys does this workshop need, and why doesn't the LLM require its own?
 
 > **⏸ Pause — check in with the instructor**
@@ -49,7 +52,9 @@ Deepgram applies **$200 in credit** to new accounts automatically. This workshop
 uv run steps/01-setup/main.py
 ```
 
-It checks your key in the terminal, then opens a page. Press **Run the audio checks**, allow the microphone when your browser asks, speak when it tells you to, and listen for the tone. Ctrl+C in the terminal when you're done.
+It checks your key in the terminal, briefly starts the agent you're about to build, then opens a page. Press **Run the audio checks**, allow the microphone when your browser asks, speak when it tells you to, and listen for the tone. Ctrl+C in the terminal when you're done.
+
+That agent line is worth a second look. The check opens the same WebSocket Step 2 opens, with the same three models, and waits for the server to accept them — then hangs up without sending a byte of audio. A key that authenticates and a model that's actually served where you're connecting are two different questions, and this is the one that answers the second.
 
 ## Verify
 
@@ -58,6 +63,8 @@ The terminal shows:
 ```
 [  OK  ] DEEPGRAM_API_KEY found (84de...c2db)
 [  OK  ] Deepgram accepted the key (project: Your Project)
+[  OK  ] Region: global (wss://agent.deepgram.com/v1/agent/converse)
+[  OK  ] Agent started (flux-general-en + gpt-4o-mini + flux-alexis-en)
 ```
 
 and the page shows five green rows:
@@ -77,6 +84,12 @@ Every row reads `OK`, and you heard the tone. Anything else, work through the fi
 **`DEEPGRAM_API_KEY is not set`** — You created `.env` but the key landed in the wrong place, or the file is named `.env.txt`. The file belongs in the repository root, next to `pyproject.toml`.
 
 **`Deepgram rejected the key`** — Almost always a truncated paste or a trailing space. Copy it again from the console.
+
+**`DEEPGRAM_REGION=... is not a Deepgram hosting location`** — A typo in `.env`. The options are `global`, `eu`, and `au`; blank means `global`. The check refuses to guess, because a typo that quietly fell back to global would still work and would still be sending your audio to the wrong continent.
+
+**`Could not open the agent connection`** — The key is fine and something is between you and Deepgram. Usually a proxy or firewall: this needs an outbound `wss://` connection to the address printed on the `Region` line above it. Corporate VPNs and guest wifi are the usual suspects; a phone hotspot is the fastest way to confirm it.
+
+**`The agent refused these settings`** — Nothing is wrong with your machine. One of the three models isn't served where you're connecting — the error names which one, and model availability differs by region. If you set `DEEPGRAM_REGION` yourself, set it back to blank. If your instructor set it, tell them: the fix is to change that one model in every step, and it's the same fix for everyone in the room.
 
 **`Secure context` fails** — You opened the page on a LAN address like `192.168.1.5:8000`. Browsers only hand out microphone access on a secure context, and a bare IP is not one. Use `http://127.0.0.1:8000` — the address the terminal printed.
 

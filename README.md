@@ -26,6 +26,20 @@ Every step from Step 2 on serves a page at `http://127.0.0.1:8000` and opens it 
 
 **Headphones still help.** Your browser cancels most of the echo from your speakers, but not all of it on every browser, and Step 5 is where the difference shows.
 
+### Running in another region
+
+Deepgram serves the same APIs from more than one place. Global is the default; the EU and AU endpoints process audio inside those geographies. Pick one in `.env`:
+
+```bash
+DEEPGRAM_REGION=eu        # global (default), eu, or au
+```
+
+That is the whole change. Your key works in every region, no step's code names one, and every step reads the same `.env` — so one line moves Steps 1 through 8 together.
+
+Step 1 then starts the agent against whichever endpoint you picked and reports whether all three models are served there. Model availability differs by region and moves over time, so that — not the key, and not whether the host answers — is the question worth asking before a room of people hits Step 2.
+
+[web/region.py](web/region.py) has the details, and the same mechanism points the workshop at a Deepgram Dedicated or self-hosted deployment.
+
 ### Prefer the terminal?
 
 Add `--local` to any step and it uses your system microphone and speaker through PortAudio instead, with no browser involved:

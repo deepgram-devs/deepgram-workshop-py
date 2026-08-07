@@ -36,6 +36,29 @@ The single biggest predictor of whether this workshop goes well is how many peop
 >
 > If the check prints anything other than all-OK, reply to this email and we'll sort it out before the day.
 
+## Running it in another region
+
+Deepgram's global endpoint is the default and is what the pre-event email above assumes. If the room needs audio processed inside the EU or Australia, set one line in `.env` and hand out the repository as usual:
+
+```bash
+DEEPGRAM_REGION=eu        # global (default), eu, or au
+```
+
+Nothing in `steps/` names a region — every step reads the same `.env`, so this moves all of them at once.
+
+You don't have to test the region yourself. Step 1 opens the same WebSocket Step 2 opens, with the same three models, and reports whether the server accepted them:
+
+```
+[  OK  ] Region: eu (wss://api.eu.deepgram.com/v1/agent/converse)
+[  OK  ] Agent started (flux-general-en + gpt-4o-mini + flux-alexis-en)
+```
+
+That is the check that matters regionally. Model availability is per-region and moves over time — a key that works and an endpoint that answers still don't tell you a model is served there. If one isn't, the agent names it in an `Error` frame and Step 1 prints it, along with the two ways out: `DEEPGRAM_REGION=global`, or swap the model the error names in every step.
+
+**As of August 2026, `au` needs one change.** Flux TTS is not served there yet, so `flux-alexis-en` is refused — Flux STT and the LLM are fine. Set `speak` to `aura-2-thalia-en` in every step's `SETTINGS` and the workshop runs unchanged; Step 6 teaches changing the voice anyway, so it costs the room nothing. `eu` and `global` both run the workshop as shipped. Step 1 tells each attendee this directly, so you'll find out even if this note goes stale.
+
+Add the `DEEPGRAM_REGION` line to the pre-event email if attendees will clone the repo themselves — `.env.example` documents it, but people paste their key and stop reading.
+
 ## Run of show
 
 Times assume a 3-hour slot with one break. The **⏸** rows are the sync points marked in each `LAB.md` — hold the room at these.
@@ -43,7 +66,7 @@ Times assume a 3-hour slot with one break. The **⏸** rows are the sync points 
 | Time | Step | What happens | Watch for |
 |---|---|---|---|
 | 0:00 | **0 — Overview** | You present. Three models, what the API orchestrates, what Flux changes | Keep it to 10 min; they came to code |
-| 0:10 | **1 — Setup** | Everyone runs the checker | **⏸** Nobody proceeds without a green key line |
+| 0:10 | **1 — Setup** | Everyone runs the checker | **⏸** Nobody proceeds without a green key line and a green `Agent started` |
 | 0:25 | **2 — Connect** | Handshake | **⏸** Everyone sees `>> Settings applied` |
 | 0:45 | **3 — Hear the agent** | Speaker output | **⏸** Everyone *hears* the greeting |
 | 1:10 | **4 — Talk to the agent** | Microphone, full loop | **⏸** Everyone holds a conversation. High point — let it breathe |
@@ -69,6 +92,8 @@ Times assume a 3-hour slot with one break. The **⏸** rows are the sync points 
 **4. The agent talks to itself.** Laptop speakers feeding the laptop microphone, past the echo canceller. Much rarer than it used to be and no longer universal, which makes it *more* confusing when it happens to one person in the room. Headphones, or turn the volume down. Step 1's check reports whether the browser actually granted echo cancellation — worth reading when someone hits this.
 
 **5. A truncated API key.** Copy-paste drops characters or adds a space. Step 1 makes a real authenticated call rather than checking the string is non-empty, so this surfaces immediately with `Deepgram rejected the key`.
+
+**And one that is not an environment failure at all:** `The agent refused these settings`. The machine is fine — a model isn't available where that person is connecting. Step 1 prints which. Same fix for the whole room, since they share a `.env` layout: `DEEPGRAM_REGION=global`, or change the named model everywhere.
 
 ## Managing pace spread
 

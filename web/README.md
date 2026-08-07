@@ -36,10 +36,19 @@ uv run steps/99-final/main.py --local         # system mic and speaker, no brows
 |---|---|
 | `bridge.py` | `run()` and `run_check()`. The FastAPI app, the `/ws` route, the static mount, argument parsing, and the `--local` path. |
 | `session.py` | `AgentSession` — one Deepgram connection and its three threads. `AgentHandle` — the `agent` object steps are handed. |
+| `region.py` | Turns `DEEPGRAM_REGION` into the endpoint the SDK connects to. One line in `.env` moves every step. |
 | `audio.py` | `BrowserPlayer` and `LocalPlayer` behind one two-method interface, plus `Outbox`, the queue behind the browser one. |
 | `static/worklets.js` | `CaptureProcessor` and `PlaybackProcessor`. The only code here that runs on an audio thread. |
 | `static/app.js` | The page: WebSocket wiring, `AudioContext` lifecycle, DOM. |
 | `static/check.html`, `check.js` | Step 1's setup check. |
+
+## Where it connects
+
+Every Deepgram connection in this repo is opened through `region.deepgram_client()`, which reads `DEEPGRAM_REGION` from `.env` — `global` (the default), `eu`, or `au`. Nothing in `steps/` names a region, so a facilitator running in Frankfurt or Sydney edits one line and hands out the same repository.
+
+The v7 SDK takes no `base_url`; endpoints are described by a `DeepgramClientEnvironment` with one field per protocol and service. `region.py` builds that, which is also how you point this at a Deepgram Dedicated or self-hosted deployment — same four fields, your hostname.
+
+One asymmetry worth knowing: the Management API (`/v1/projects`, the call Step 1 makes to prove your key works) is global only. `region.management_client()` exists to keep that deliberate.
 
 ## The wire protocol
 
