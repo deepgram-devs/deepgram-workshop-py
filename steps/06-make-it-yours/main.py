@@ -1,14 +1,15 @@
-"""Step 7 - Make it yours.
+"""Step 6 - Make it yours.
 
-Runs exactly as Step 6 left it: a tuned, interruptible voice agent.
+Runs exactly as Step 5 left it: an interruptible agent that holds a
+conversation.
 
 Everything so far has been plumbing. This step is where the agent becomes
 *yours* -- its job, its personality, its voice, its opening line. There is less
 code here than in any other step and more to play with.
 
-Look for the "TODO (Step 7.x)" blocks below.
+Look for the "TODO (Step 6.x)" blocks below.
 
-Run it with:  uv run steps/07-make-it-yours/main.py
+Run it with:  uv run steps/06-make-it-yours/main.py
 """
 
 from deepgram.agent.v1.types import (
@@ -35,13 +36,11 @@ SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For 
 # tuned for. That interacts with everything below: no threshold setting can
 # detect a turn end sooner than the chunk carrying it arrives.
 
-# Flux's turn detection knobs. Every turn gets an end-of-turn confidence score;
-# these decide how much confidence is enough and how long silence may run.
+# Flux's turn detection knobs, at a balanced starting point. Every turn gets an
+# end-of-turn confidence score; these decide how much confidence is enough and
+# how long silence may run. Step 8 is where you move them.
 EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
 EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
-# Also available: eager_eot_threshold (0.3-0.9, off by default, must be <=
-# EOT_THRESHOLD). It starts the LLM on a probable turn end and discards the work
-# if the user keeps talking -- lower latency, more LLM calls.
 
 SETTINGS = AgentV1Settings(
     audio=AgentV1SettingsAudio(
@@ -63,12 +62,13 @@ SETTINGS = AgentV1Settings(
             ),
         ),
         think=ThinkSettingsV1(
-            # ---- TODO (Step 7.3): Try a different brain -------------------
+            # ---- TODO (Step 6.3): Try a different brain -------------------
             # gpt-4o-mini is fast and cheap, which matters more than raw
             # capability when someone is waiting to hear a reply. Try
             # "gpt-4o" and listen for the extra latency before deciding it is
-            # worth it -- the latency readout you turned on in Step 6 puts a
-            # number on it. temperature controls variability: 0.0 for an agent
+            # worth it -- the readout on the right of the browser's activity
+            # line puts a number on it, and Step 8 is where that number becomes
+            # the whole point. temperature controls variability: 0.0 for an agent
             # that must say the same thing every time, 1.0+ for a chatty one.
             #
             # Other providers are available here too (Anthropic, Google, Groq,
@@ -83,7 +83,7 @@ SETTINGS = AgentV1Settings(
             # LLM. It is the agent's standing instructions -- personality, job,
             # and boundaries. Keep it short: every token here is re-sent on
             # every turn, and long prompts slow the first reply.
-            # ---- TODO (Step 7.1): Give your agent a job -------------------
+            # ---- TODO (Step 6.1): Give your agent a job -------------------
             # Replace the prompt below. Two rules that matter more than they
             # look:
             #
@@ -108,12 +108,12 @@ SETTINGS = AgentV1Settings(
         speak=SpeakSettingsV1(
             provider=SpeakSettingsV1Provider_Deepgram(
                 type="deepgram",
-                # ---- TODO (Step 7.2): Pick a voice ------------------------
+                # ---- TODO (Step 6.2): Pick a voice ------------------------
                 # Swap flux-alexis-en for another Flux voice. The full list is
                 # at https://developers.deepgram.com/docs/tts-models
                 #
                 # Deliberately misspell one first and run it. You will get a
-                # ">> Agent warning" once you finish TODO 7.4 -- a rejected
+                # ">> Agent warning" once you finish TODO 6.4 -- a rejected
                 # voice is non-fatal, and the agent falls back rather than
                 # failing the handshake. Knowing that saves you an hour some
                 # day when an agent sounds wrong and nothing has errored.
@@ -124,7 +124,7 @@ SETTINGS = AgentV1Settings(
         # The agent's first utterance, spoken as soon as settings are applied.
         # It is added to the conversation history, so the LLM knows it already
         # said this and will not repeat itself on the first real turn.
-        # ---- TODO (Step 7.2b): Write a new opening line -------------------
+        # ---- TODO (Step 6.2b): Write a new opening line -------------------
         # Make it match the job you gave it above. This is the only line the
         # agent says before it knows anything about the user, so it is doing
         # all the work of setting expectations.
@@ -141,7 +141,7 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     events stay visible rather than being silently dropped.
 
     Args:
-        agent: The connected agent. Unused until Step 8.
+        agent: The connected agent. Unused until Step 7.
         player: Where audio is played. send() queues a chunk; clear() throws
             away whatever is queued but not yet heard.
         message: Either raw bytes of Flux TTS audio, or a decoded model whose
@@ -172,20 +172,16 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     elif message_type == "AgentAudioDone":
         print(">> Agent finished speaking")
     elif message_type == "LatencyReport":
-        # One report per turn, arriving right after the reply starts.
-        # total_latency is end-of-utterance to first audio byte -- the number
-        # the turn-detection knobs above move. Also carries ttt_token_latency,
-        # ttt_text_latency, ttt_tool_latency, ttt_thinking_latency, and
-        # tts_latency. Every field is optional -- absent, not zero, when it
-        # doesn't apply.
-        total = getattr(message, "total_latency", None)
-        if total is not None:
-            print(f">> Latency: {total:.2f}s")
+        # One report per turn, arriving right after the reply starts. Printed,
+        # it buries the conversation -- Step 8 turns it on deliberately, once
+        # there is a reason to read it. The browser shows the number either
+        # way, on the right of the activity line above the transcript.
+        pass
     elif message_type == "Error":
         code = getattr(message, "code", "unknown")
         description = getattr(message, "description", "unknown error")
         print(f">> Agent error: {code} - {description}")
-    # ---- TODO (Step 7.4): Surface warnings --------------------------------
+    # ---- TODO (Step 6.4): Surface warnings --------------------------------
     # Add a branch for "Warning", printing .code and .description the same way
     # the Error branch above does:
     #

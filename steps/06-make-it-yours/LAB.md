@@ -1,4 +1,4 @@
-# Step 7 — Make it yours
+# Step 6 — Make it yours
 
 **Goal:** Give the agent a job, a personality, and a voice.
 
@@ -11,10 +11,10 @@
 ## Start here
 
 ```bash
-uv run steps/07-make-it-yours/main.py
+uv run steps/06-make-it-yours/main.py
 ```
 
-Everything works and it's tuned. It's also a generic assistant with a stock voice, and it will stay that way until you change it.
+Everything works: it hears you, answers you, and shuts up when you talk over it. It's also a generic assistant with a stock voice, and it will stay that way until you change it.
 
 This step has the least code in the workshop and the most to play with.
 
@@ -40,21 +40,21 @@ Keep the prompt short for a second reason: every token is re-sent on every turn,
 
 ## Do this
 
-**TODO 7.1 — Give your agent a job.** Rewrite the prompt. Cover both rules above, then make it something specific — a barista taking an order, support for a product you know well, a dungeon master, a museum guide. Specific beats generic every time, and it's much more fun to test.
+**TODO 6.1 — Give your agent a job.** Rewrite the prompt. Cover both rules above, then make it something specific — a barista taking an order, support for a product you know well, a dungeon master, a museum guide. Specific beats generic every time, and it's much more fun to test.
 
-**TODO 7.2 — Pick a voice.** Swap `flux-alexis-en` for another Flux voice. The full list lives in the [Deepgram TTS models documentation](https://developers.deepgram.com/docs/tts-models).
+**TODO 6.2 — Pick a voice.** Swap `flux-alexis-en` for another Flux voice. The full list lives in the [Deepgram TTS models documentation](https://developers.deepgram.com/docs/tts-models).
 
-Misspell one deliberately first and run it. Once you've finished TODO 7.4 you'll see a `>> Agent warning` and the agent falls back rather than failing. Knowing that saves you an hour some day when an agent sounds wrong and nothing has errored.
+Misspell one deliberately first and run it. Once you've finished TODO 6.4 you'll see a `>> Agent warning` and the agent falls back rather than failing. Knowing that saves you an hour some day when an agent sounds wrong and nothing has errored.
 
-**TODO 7.2b — Write a new opening line.** Match it to the job you just assigned.
+**TODO 6.2b — Write a new opening line.** Match it to the job you just assigned.
 
-**TODO 7.3 — Try a different brain.** `gpt-4o-mini` is fast and cheap, which matters more than raw capability when someone is waiting to hear a reply. Switch to `gpt-4o` and watch `>> Latency:` — you're paying for that capability in a currency your users feel directly.
+**TODO 6.3 — Try a different brain.** `gpt-4o-mini` is fast and cheap, which matters more than raw capability when someone is waiting to hear a reply. Switch to `gpt-4o` and watch the latency readout on the right of the browser's activity line — you're paying for that capability in a currency your users feel directly. Step 8 is where that number becomes the whole point.
 
 `temperature` controls variability: `0.0` for an agent that must say the same thing every time, `1.0` and up for a chatty one. Other providers work here too — Anthropic, Google, Groq, AWS Bedrock — via the matching `ThinkSettingsV1Provider_*` class.
 
-**TODO 7.4 — Surface warnings.** Add a `Warning` branch mirroring the `Error` branch above it.
+**TODO 6.4 — Surface warnings.** Add a `Warning` branch mirroring the `Error` branch above it.
 
-Warnings are where rejected settings go. A misspelled voice or an out-of-range threshold arrives here rather than failing the handshake — so without this branch, a bad setting gets silently ignored and you're left wondering why nothing changed. This is the branch that makes Step 6's thresholds debuggable.
+Warnings are where rejected settings go. A misspelled voice or an out-of-range threshold arrives here rather than failing the handshake — so without this branch, a bad setting gets silently ignored and you're left wondering why nothing changed. It's also what will make Step 8's thresholds debuggable.
 
 ## Verify
 
@@ -77,11 +77,11 @@ Ask it something that would normally get a bulleted list — "what are the main 
 
 **Answers got long again** — Larger models are more verbose by default. Re-state the brevity instruction, or go back to `gpt-4o-mini`.
 
-**Voice didn't change and there's no warning** — Confirm you edited `speak`, not `listen`, and that TODO 7.4 is done.
+**Voice didn't change and there's no warning** — Confirm you edited `speak`, not `listen`, and that TODO 6.4 is done.
 
-**Noticeably slower after switching models** — Working as intended. Check `>> Latency:` and decide whether the quality is worth it.
+**Noticeably slower after switching models** — Working as intended. Check the browser's latency readout and decide whether the quality is worth it.
 
-`steps/08-function-calling/main.py` is this step, finished — reset to the neutral prompt and voice, so everyone starts Step 8 from the same place regardless of the persona they chose. Carry yours forward if you'd rather.
+`steps/07-function-calling/main.py` is this step, finished — reset to the neutral prompt and voice, so everyone starts Step 7 from the same place regardless of the persona they chose. Carry yours forward if you'd rather.
 
 ## Going further
 
@@ -91,4 +91,4 @@ Give the agent a constraint it has to hold under pressure — "you only discuss 
 
 Your agent has a job and a voice. What it can't do yet is anything outside its own head.
 
-**Next:** [Step 8 — Function calling](../08-function-calling/LAB.md)
+**Next:** [Step 7 — Function calling](../07-function-calling/LAB.md)

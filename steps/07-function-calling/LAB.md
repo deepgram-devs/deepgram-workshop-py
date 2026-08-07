@@ -1,4 +1,4 @@
-# Step 8 — Function calling
+# Step 7 — Function calling
 
 **Goal:** Let the agent run your Python and speak the result.
 
@@ -11,7 +11,7 @@
 ## Start here
 
 ```bash
-uv run steps/08-function-calling/main.py
+uv run steps/07-function-calling/main.py
 ```
 
 You have a complete voice agent. Ask it what time it is and it will confidently make something up, because an LLM has no clock. This step closes that gap and every gap like it.
@@ -36,9 +36,9 @@ The second most important detail: **the description is a prompt.** It's the only
 
 ## Do this
 
-**TODO 8.1 — Add the imports.** Four of them, listed in the file.
+**TODO 7.1 — Add the imports.** Four of them, listed in the file.
 
-**TODO 8.2 — Write the function.** `get_current_time(timezone)`, building a `ZoneInfo` with a UTC fallback in a `try`/`except`.
+**TODO 7.2 — Write the function.** `get_current_time(timezone)`, building a `ZoneInfo` with a UTC fallback in a `try`/`except`.
 
 That fallback isn't defensive padding. The LLM invents plausible-but-wrong timezone strings often enough — `"EST"`, `"Pacific"`, `"Tokyo"` — that raising here would end otherwise fine conversations.
 
@@ -46,11 +46,11 @@ Return a **sentence**, not a data structure. Whatever you return goes back to th
 
 One portability note: `strftime`'s `%-I` (hour without a leading zero) is a glibc/BSD extension that fails on Windows. Use `"%I:%M %p"` and `.lstrip("0")`.
 
-**TODO 8.3 — Advertise it.** Build the `FUNCTIONS` list. The `parameters` field is plain JSON Schema, exactly as the LLM's tool-calling API expects.
+**TODO 7.3 — Advertise it.** Build the `FUNCTIONS` list. The `parameters` field is plain JSON Schema, exactly as the LLM's tool-calling API expects.
 
-**TODO 8.4 — Attach it.** `functions=FUNCTIONS` on `ThinkSettingsV1`.
+**TODO 7.4 — Attach it.** `functions=FUNCTIONS` on `ThinkSettingsV1`.
 
-**TODO 8.5 — Handle the call.** Write `handle_function_call`. Two things will bite you here:
+**TODO 7.5 — Handle the call.** Write `handle_function_call`. Two things will bite you here:
 
 **Catch exceptions and return the error text as `content`.** The agent is mid-turn and blocked waiting on your response. A raised exception escapes into the SDK's receive loop, surfaces as `EventType.ERROR`, and drops the call. Returning `"get_current_time failed: ..."` lets the LLM apologize gracefully and move on.
 
@@ -58,7 +58,7 @@ One portability note: `strftime`'s `%-I` (hour without a leading zero) is a glib
 
 Print both the call and the result. You want to see what the LLM actually passed you.
 
-**TODO 8.6 — Dispatch it.** Add the `FunctionCallRequest` branch.
+**TODO 7.6 — Dispatch it.** Add the `FunctionCallRequest` branch.
 
 Run it *before* you add this branch, once. You'll see `>> FunctionCallRequest` from the fallthrough and then nothing — the agent waits forever for a reply that never comes. Worth seeing on purpose, because it's what a broken handler looks like from the outside.
 
@@ -82,7 +82,7 @@ Then ask it something that shouldn't trigger a call — "what's the capital of F
 
 **The function never gets called** — Nine times out of ten it's the description. Make it explicit about *when* to use the function. Confirm `functions=FUNCTIONS` actually reached `ThinkSettingsV1`.
 
-**`>> FunctionCallRequest` prints and the agent goes silent** — TODO 8.6 isn't done, or your handler raised before sending a response. The agent is still waiting.
+**`>> FunctionCallRequest` prints and the agent goes silent** — TODO 7.6 isn't done, or your handler raised before sending a response. The agent is still waiting.
 
 **`TypeError: got an unexpected keyword argument`** — The LLM passed a parameter your Python doesn't accept. Your schema and your signature have drifted apart.
 
@@ -90,16 +90,18 @@ Then ask it something that shouldn't trigger a call — "what's the capital of F
 
 **Agent gets the answer but says something different** — The LLM paraphrases your result. Return a clear, complete sentence and it stays close to it.
 
-`steps/99-final/main.py` is this step, finished.
+`steps/08-optimize/main.py` is this step, finished.
 
 ## Going further
 
-Add a second function and watch the LLM choose between them. Good candidates: a fake order lookup keyed by a number the user reads aloud, a unit converter, a `roll_dice(sides, count)` for the dungeon-master persona from Step 7.
+Add a second function and watch the LLM choose between them. Good candidates: a fake order lookup keyed by a number the user reads aloud, a unit converter, a `roll_dice(sides, count)` for the dungeon-master persona from Step 6.
 
 Then break one on purpose — raise an exception inside it — and listen to how the agent handles the failure. Graceful degradation is most of what separates a demo from something you'd ship.
 
 ---
 
-You've built a complete voice agent: it listens on Flux, thinks with an LLM, speaks with Flux TTS, yields the floor when interrupted, and calls your code when it needs something it can't know.
+You've built a complete voice agent: it listens on Flux, thinks with an LLM, speaks with Flux TTS, yields the floor when interrupted, and calls your code when it needs something it can't know. Nothing is missing.
 
-**Next:** [Where to go from here](../99-final/README.md)
+What's left is how it feels — and that's two numbers you haven't touched yet.
+
+**Next:** [Step 8 — Optimization](../08-optimize/LAB.md)

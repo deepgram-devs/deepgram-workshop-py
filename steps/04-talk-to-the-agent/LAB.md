@@ -83,7 +83,7 @@ Two things to notice. First, `>> UserStartedSpeaking` appears with no branch han
 
 **The agent hears itself and answers its own questions** — Your speaker is feeding your microphone. The browser's echo cancellation handles most of this, but not all of it on every browser. Use headphones. This gets much more noticeable in Step 5.
 
-**Long pause before the agent replies** — Normal at this stage. Step 6 shows you how to measure it and what moves it.
+**Long pause before the agent replies** — Normal at this stage. Step 8 shows you how to measure it and what moves it.
 
 `steps/05-barge-in/main.py` is this step, finished.
 

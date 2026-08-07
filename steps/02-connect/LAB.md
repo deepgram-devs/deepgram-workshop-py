@@ -62,7 +62,7 @@ The `isinstance(message, bytes)` check comes first because audio frames are not 
 
 The final `else` prints instead of ignoring. Deepgram adds server events over time, and the fallthrough means new ones surface in your console rather than vanishing silently. You'll rely on that in Step 5.
 
-The signature takes three arguments — `agent`, `player`, `message` — whether you use them or not. `player` starts earning its place in Step 3, `agent` in Step 8.
+The signature takes three arguments — `agent`, `player`, `message` — whether you use them or not. `player` starts earning its place in Step 3, `agent` in Step 7.
 
 **TODO 2.2 — Hand your agent to the bridge.** `bridge.run(settings=SETTINGS, on_message=on_message)`.
 

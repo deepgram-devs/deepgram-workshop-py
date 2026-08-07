@@ -83,9 +83,9 @@ Your browser cancels most of the echo from your speakers, which is why this step
 
 **The agent interrupts itself constantly** — Speaker bleeding into microphone, past the echo canceller. Headphones. If you're stuck on laptop speakers, turn the volume down and expect some of this.
 
-**It cuts you off too eagerly, mid-thought** — That's turn detection, not barge-in, and it's exactly what Step 6 tunes.
+**It cuts you off too eagerly, mid-thought** — That's turn detection, not barge-in, and it's exactly what Step 8 tunes.
 
-`steps/06-tune-turns/main.py` is this step, finished.
+`steps/06-make-it-yours/main.py` is this step, finished.
 
 ## Going further
 
@@ -93,6 +93,6 @@ Comment out the `this.queue.length = 0` line in `PlaybackProcessor`'s `clear` ha
 
 ---
 
-Your agent listens, thinks, speaks, and yields the floor. What's left is making the turn-taking feel natural.
+Your agent listens, thinks, speaks, and yields the floor. What it doesn't have is a personality — it's a stock assistant with a stock voice.
 
-**Next:** [Step 6 — Tune turn detection](../06-tune-turns/LAB.md)
+**Next:** [Step 6 — Make it yours](../06-make-it-yours/LAB.md)

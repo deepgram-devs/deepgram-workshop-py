@@ -44,13 +44,13 @@ That queue is why `AgentAudioDone` does not mean "the agent stopped talking." It
 
 ## Do this
 
-**TODO 3.1 — Play the audio.** Replace the discarded branch with `player.send(message)`.
+**TODO 3.1 — Play the audio.** The `bytes` branch currently drops every audio frame. Hand them to the player instead: `player.send(message)`.
 
 Notice what you are *not* writing: no error handling, no buffering, no device setup. A chunk that cannot be played is the bridge's problem. Look at `LocalPlayer.send` in [`web/audio.py`](../../web/audio.py) to see the version that does have to care — it catches `PortAudioError` and drops the chunk rather than letting it fly, because that handler runs inside the SDK's receive loop, and that loop wraps everything in a single `try`/`except`. Any exception escaping it gets reported as `EventType.ERROR` and closes the connection. Dropping one 80 ms chunk beats ending the call.
 
-**TODO 3.2 — Narrate the turn.** Give `AgentThinking`, `AgentStartedSpeaking`, and `AgentAudioDone` their own branches so the console reads like a transcript of what the agent is doing.
+**TODO 3.2 — Narrate the turn.** Give `AgentThinking`, `AgentStartedSpeaking`, and `AgentAudioDone` their own `elif` branches so the console reads like a transcript of what the agent is doing.
 
-`LatencyReport` gets an explicit `pass`. It fires once per turn, and left to the fallthrough it clutters the transcript. Step 6 turns it into something you'll actually want.
+`LatencyReport` gets an explicit `pass`. It fires once per turn, and left to the fallthrough it clutters the transcript. Step 8 turns it into something you'll actually want.
 
 ## Verify
 

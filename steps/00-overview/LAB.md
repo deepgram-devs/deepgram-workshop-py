@@ -61,8 +61,8 @@ By the end of Step 8, roughly 350 lines that:
 - Stream microphone audio from a browser without blocking the thread that plays the reply
 - Play the agent's speech as it arrives
 - Cut playback the instant you interrupt
-- Let you tune how patient the agent is, and measure what it costs
 - Call your Python and speak the result
+- Let you tune how patient the agent is, and measure what it costs
 
 ## How the workshop is laid out
 

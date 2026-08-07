@@ -41,6 +41,10 @@ load_dotenv()
 
 SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For telephony, 8000 is recommended.
 
+# Flux's turn detection knobs, at a balanced starting point. Step 8 moves them.
+EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
+EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
+
 SETTINGS = AgentV1Settings(
     audio=AgentV1SettingsAudio(
         input=AgentV1SettingsAudioInput(encoding="linear16", sample_rate=SAMPLE_RATE),
@@ -51,6 +55,8 @@ SETTINGS = AgentV1Settings(
             provider=AgentV1SettingsAgentContextListenProvider_V2(
                 type="deepgram",
                 model="flux-general-en",  # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
+                eot_threshold=EOT_THRESHOLD,
+                eot_timeout_ms=EOT_TIMEOUT_MS,
             ),
         ),
         think=ThinkSettingsV1(
@@ -79,7 +85,7 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     events stay visible rather than being silently dropped.
 
     Args:
-        agent: The connected agent. Unused until Step 8.
+        agent: The connected agent. Unused until Step 7.
         player: Where audio is played. send() queues a chunk.
         message: Either raw bytes of Flux TTS audio, or a decoded model whose
             "type" attribute names the event.
@@ -129,7 +135,7 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     #
     # LatencyReport gets an explicit `pass` rather than being left to the
     # fallthrough: it fires once per turn and would otherwise clutter the
-    # transcript. Step 6 turns it into something useful.
+    # transcript. Step 8 turns it into something useful.
     #
     # AgentAudioDone is worth a moment. It means the agent has finished
     # *sending* audio, not that you have finished hearing it -- there may be a

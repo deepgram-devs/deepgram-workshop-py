@@ -1,17 +1,17 @@
-"""Step 8 - Function calling.
+"""Step 7 - Function calling.
 
-Runs exactly as Step 7 left it: a voice agent with your persona and voice.
+Runs exactly as Step 6 left it: a voice agent with your persona and voice.
 
 Your job in this step is to let the agent run Python. You will advertise a
 function in the agent's settings, handle the FunctionCallRequest the agent
 sends when the LLM decides to use it, and send the result back.
 
-Look for the "TODO (Step 8.x)" blocks below and work through them in order.
+Look for the "TODO (Step 7.x)" blocks below and work through them in order.
 
-Run it with:  uv run steps/08-function-calling/main.py
+Run it with:  uv run steps/07-function-calling/main.py
 """
 
-# ---- TODO (Step 8.1): Imports ---------------------------------------------
+# ---- TODO (Step 7.1): Imports ---------------------------------------------
 # You need five more imports for this step. Add them to the groups below,
 # keeping each group alphabetical:
 #
@@ -52,15 +52,13 @@ SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For 
 # tuned for. That interacts with everything below: no threshold setting can
 # detect a turn end sooner than the chunk carrying it arrives.
 
-# Flux's turn detection knobs. Every turn gets an end-of-turn confidence score;
-# these decide how much confidence is enough and how long silence may run.
+# Flux's turn detection knobs, at a balanced starting point. Every turn gets an
+# end-of-turn confidence score; these decide how much confidence is enough and
+# how long silence may run. Step 8 is where you move them.
 EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
 EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
-# Also available: eager_eot_threshold (0.3-0.9, off by default, must be <=
-# EOT_THRESHOLD). It starts the LLM on a probable turn end and discards the work
-# if the user keeps talking -- lower latency, more LLM calls.
 
-# ---- TODO (Step 8.2): Write the function ----------------------------------
+# ---- TODO (Step 7.2): Write the function ----------------------------------
 # Write the Python the agent will call. Signature:
 #
 #   def get_current_time(timezone: str = "UTC") -> str:
@@ -84,7 +82,7 @@ EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this 
 # Docstrings are required here -- ruff is configured with pydocstyle (google).
 # ---------------------------------------------------------------------------
 
-# ---- TODO (Step 8.3): Advertise the function ------------------------------
+# ---- TODO (Step 7.3): Advertise the function ------------------------------
 # Build the list the agent is told about. This is advertising only: the LLM
 # decides *whether* to call, your code decides *what happens* when it does.
 #
@@ -151,7 +149,7 @@ SETTINGS = AgentV1Settings(
                 "You are speaking out loud, so never use markdown, bullet "
                 "points, or emoji."
             ),
-            # ---- TODO (Step 8.4): Attach the functions --------------------
+            # ---- TODO (Step 7.4): Attach the functions --------------------
             # Add:  functions=FUNCTIONS,
             # ---------------------------------------------------------------
         ),
@@ -171,7 +169,7 @@ SETTINGS = AgentV1Settings(
     ),
 )
 
-# ---- TODO (Step 8.5): Handle the call -------------------------------------
+# ---- TODO (Step 7.5): Handle the call -------------------------------------
 # Write a module-level function:
 #
 #   def handle_function_call(agent: AgentHandle, message: object) -> None:
@@ -240,7 +238,7 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         print(">> Agent started speaking")
     elif message_type == "AgentAudioDone":
         print(">> Agent finished speaking")
-    # ---- TODO (Step 8.6): Dispatch the request ----------------------------
+    # ---- TODO (Step 7.6): Dispatch the request ----------------------------
     # Add a branch, above the LatencyReport one:
     #
     #   elif message_type == "FunctionCallRequest":
@@ -251,15 +249,11 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     # thing to see once on purpose.
     # -----------------------------------------------------------------------
     elif message_type == "LatencyReport":
-        # One report per turn, arriving right after the reply starts.
-        # total_latency is end-of-utterance to first audio byte -- the number
-        # the turn-detection knobs above move. Also carries ttt_token_latency,
-        # ttt_text_latency, ttt_tool_latency, ttt_thinking_latency, and
-        # tts_latency. Every field is optional -- absent, not zero, when it
-        # doesn't apply.
-        total = getattr(message, "total_latency", None)
-        if total is not None:
-            print(f">> Latency: {total:.2f}s")
+        # One report per turn, arriving right after the reply starts. Printed,
+        # it buries the conversation -- Step 8 turns it on deliberately, once
+        # there is a reason to read it. The browser shows the number either
+        # way, on the right of the activity line above the transcript.
+        pass
     elif message_type == "Error":
         code = getattr(message, "code", "unknown")
         description = getattr(message, "description", "unknown error")

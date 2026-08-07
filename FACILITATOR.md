@@ -49,14 +49,14 @@ Times assume a 3-hour slot with one break. The **⏸** rows are the sync points 
 | 1:10 | **4 — Talk to the agent** | Microphone, full loop | **⏸** Everyone holds a conversation. High point — let it breathe |
 | 1:40 | — | **Break, 10 min** | Use it to unstick stragglers |
 | 1:50 | **5 — Barge-in** | Interruption | **⏸** Everyone experiences the bug *before* fixing it |
-| 2:15 | **6 — Tune turns** | EOT thresholds, latency | Pace-recovery step. Stragglers catch up here |
-| 2:35 | **7 — Make it yours** | Persona and voice | **⏸** Go around the room and demo a few |
-| 2:55 | **8 — Function calling** | Tools | **⏸** Sketch a function for their own use case first |
+| 2:15 | **6 — Make it yours** | Persona and voice | **⏸** Go around the room and demo a few |
+| 2:35 | **7 — Function calling** | Tools | **⏸** Sketch a function for their own use case first |
+| 3:05 | **8 — Optimization** | EOT thresholds, latency | Pace-recovery step. Stragglers catch up here, and it sheds time cleanly |
 | 3:20 | **Wrap** | `steps/99-final/README.md`, Q&A | Point at Discord and the docs |
 
-**Running long?** Cut Step 6 and Step 8's exercises — both work fine as take-home. Never cut Step 5; it's the step people remember.
+**Running long?** Cut Step 8 and Step 7's exercises — both work fine as take-home, and Step 8 is deliberately last so it can go. Never cut Step 5; it's the step people remember.
 
-**Running short?** Step 6's "Going further" (`eager_eot_threshold`) and Step 8's second function absorb time well.
+**Running short?** Step 8's "Going further" (`eager_eot_threshold`) and Step 7's second function absorb time well.
 
 ## The five failures you will actually hit
 
@@ -94,11 +94,11 @@ The `LAB.md` files pose these; here are the answers, for when you ask the room.
 
 **Step 5** — Because the pump would immediately refill the browser's queue from the Python-side one. Clearing the far queue first and the near queue second means the agent talks over the user a moment later rather than immediately — which is worse, because it looks like it nearly works. (The PortAudio equivalent: `stop()` drains the buffer, playing everything already queued before stopping. `abort()` throws it away.)
 
-**Step 6** — Raise `eot_threshold`. It demands more confidence before Flux calls the turn over.
+**Step 6** — Tell it that it's speaking (no markdown, bullets, or emoji), and tell it to be brief.
 
-**Step 7** — Tell it that it's speaking (no markdown, bullets, or emoji), and tell it to be brief.
+**Step 7** — Setting `endpoint` moves execution to Deepgram; omitting it keeps the function client-side.
 
-**Step 8** — Setting `endpoint` moves execution to Deepgram; omitting it keeps the function client-side.
+**Step 8** — Raise `eot_threshold`. It demands more confidence before Flux calls the turn over.
 
 ## Links for the room
 
@@ -117,7 +117,7 @@ Worth turning into QR codes on a slide — attendees on a conference floor won't
 
 Share the repo link again, point at [steps/99-final/README.md](steps/99-final/README.md) for extension ideas, and invite people into Discord while they still have the agent running.
 
-Worth capturing while it's fresh: which step consumed the most time, how many people finished Step 8, and which environment failures actually occurred. That's what you'll change before the next run.
+Worth capturing while it's fresh: which step consumed the most time, how many people finished Step 7, and which environment failures actually occurred. That's what you'll change before the next run.
 
 ## Maintaining this repo
 
