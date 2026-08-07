@@ -25,7 +25,7 @@ Function calling connects the agent to things the model can't know: your databas
 3. Your code runs the function and sends back a `FunctionCallResponse`.
 4. The LLM works your result into its reply, and the agent speaks it.
 
-The single most important detail: **leaving `endpoint` unset marks a function client-side.** That one omission is what makes Deepgram send the call down the socket to you, instead of calling an HTTP endpoint itself. Set `endpoint` and Deepgram handles the call server-side and you never see it. Both are valid; client-side is what you want when the function touches local state, local credentials, or anything you'd rather not expose over HTTP.
+The single most important detail: **leaving `endpoint` unset marks a function client-side.** That one omission makes Deepgram send the call down the socket to you, instead of calling an HTTP endpoint itself. Set `endpoint` and Deepgram handles the call server-side and you never see it. Both are valid; client-side is what you want when the function touches local state, local credentials, or anything you'd rather not expose over HTTP.
 
 > **Check yourself** — What single change to the function definition moves execution from your machine to Deepgram's?
 
@@ -42,7 +42,7 @@ The second most important detail: **the description is a prompt.** It's the only
 
 That fallback isn't defensive padding. The LLM invents plausible-but-wrong timezone strings often enough — `"EST"`, `"Pacific"`, `"Tokyo"` — that raising here would end otherwise fine conversations.
 
-Return a **sentence**, not a data structure. Whatever you return goes back to the LLM and gets read aloud, so `"It is 2:15 PM on Tuesday, August 05 in America/New_York."` works far better than `{"hour": 14, "minute": 15}`.
+Return a **sentence**, not a data structure. Whatever you return goes back to the LLM and comes out of the speaker, so `"It is 2:15 PM on Tuesday, August 05 in America/New_York."` works far better than `{"hour": 14, "minute": 15}`.
 
 One portability note: `strftime`'s `%-I` (hour without a leading zero) is a glibc/BSD extension that fails on Windows. Use `"%I:%M %p"` and `.lstrip("0")`.
 

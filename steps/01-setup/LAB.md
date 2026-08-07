@@ -10,7 +10,7 @@
 
 ## Why this step exists
 
-Voice work fails in a specific, predictable order: the key is wrong, the browser never got microphone permission, or the page is being served from somewhere the browser refuses to trust with a microphone at all. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
+Voice work fails in a specific, predictable order: the key is wrong, the browser never got microphone permission, or you are serving the page from somewhere the browser refuses to trust with a microphone at all. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
 
 This step also triggers your browser's microphone permission prompt.
 
@@ -36,7 +36,7 @@ Open `.env` and paste in your Deepgram API key. Grab a free one at [console.deep
 
 That key is the only credential you need. The agent you build uses OpenAI's `gpt-4o-mini` as its brain, but Deepgram brokers that call — so no OpenAI account, no second key, no second bill.
 
-New Deepgram accounts get **$200 in credit** applied automatically. This workshop costs well under a dollar, so you'll have plenty left to keep building afterward.
+Deepgram applies **$200 in credit** to new accounts automatically. This workshop costs well under a dollar, so you'll have plenty left to keep building afterward.
 
 > **Check yourself** — How many API keys does this workshop need, and why doesn't the LLM require its own?
 
@@ -116,11 +116,11 @@ ctl.!default { type pulse }
 EOF
 ```
 
-WSL audio used to be the single most common environment failure in this workshop. It is now avoidable: drop `--local` and the audio goes through your Windows browser instead, which needs none of the above.
+WSL audio used to be the single most common environment failure in this workshop. You can now sidestep it entirely: drop `--local` and the audio goes through your Windows browser instead, which needs none of the above.
 
 ## Going further
 
-Open your browser's dev tools (F12) on the check page and watch the console while you run it. You'll see the sample rate the browser actually gave you. Then look at the Network tab — `worklets.js` is fetched and handed to the audio thread, which is the only file in this workshop that does not run on the main thread.
+Open your browser's dev tools (F12) on the check page and watch the console while you run it. You'll see the sample rate the browser actually gave you. Then look at the Network tab — the browser fetches `worklets.js` and hands it to the audio thread, making it the only file in this workshop that does not run on the main thread.
 
 ---
 

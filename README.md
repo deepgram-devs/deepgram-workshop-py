@@ -42,7 +42,7 @@ Each folder holds the finished state of the step before it. Open `LAB.md` for in
 
 | Step | You build | Run it | Time |
 |---|---|---|---|
-| [0 — Overview](steps/00-overview/LAB.md) | *(read only)* What a voice agent is made of | — | 10 min |
+| [0 — Overview](steps/00-overview/LAB.md) | *(read only)* The parts of a voice agent | — | 10 min |
 | [1 — Setup](steps/01-setup/LAB.md) | Verify key, browser, and microphone | `uv run steps/01-setup/main.py` | 15 min |
 | [2 — Connect](steps/02-connect/LAB.md) | The WebSocket and settings handshake | `uv run steps/02-connect/main.py` | 20 min |
 | [3 — Hear the agent](steps/03-hear-the-agent/LAB.md) | Playback — the greeting plays | `uv run steps/03-hear-the-agent/main.py` | 25 min |
@@ -66,7 +66,7 @@ Each lab has **Check yourself** questions to test your understanding as you go, 
 - Wiring client-side function calls into a live conversation
 - Trading turn-detection latency against accuracy, and measuring it honestly
 
-The audio plumbing itself lives in [web/](web/) — a small FastAPI bridge and two AudioWorklets, shared by every step and read rather than written. [web/README.md](web/README.md) explains what it does and the three things about it that are easy to get wrong.
+The audio plumbing itself lives in [web/](web/) — a small FastAPI bridge and two AudioWorklets that every step shares and you read rather than write. [web/README.md](web/README.md) explains what it does and the three things about it that are easy to get wrong.
 
 ## Getting help
 

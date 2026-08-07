@@ -24,7 +24,7 @@ your voice ──▶ Speech to Text ──▶ LLM ──▶ Text to Speech ─�
 
 Deepgram runs all three and manages the connection between them. Your job — in code or in this playground — is configuration: which models, what the agent is told to do, and which of your functions it's allowed to call.
 
-The one idea worth carrying out of this room: **the playground's settings panel is a form over a JSON document.** Every control you touch writes one field of a `Settings` message that gets sent the moment a conversation opens. The developers next to you are typing that same document by hand. Here it is, trimmed to the fields you'll change today:
+The one idea worth carrying out of this room: **the playground's settings panel is a form over a JSON document.** Every control you touch writes one field of a `Settings` message the playground sends the moment a conversation opens. The developers next to you are typing that same document by hand. Here it is, trimmed to the fields you'll change today:
 
 ```json
 {
@@ -50,9 +50,9 @@ The one idea worth carrying out of this room: **the playground's settings panel 
 | 3 — Hear the agent | Lab 1 |
 | 4 — Talk to the agent | Lab 1 |
 | 5 — Barge-in | [Lab 2 — Interrupt it](#lab-2--interrupt-it) |
-| 6 — Tune turn detection | [Lab 3 — Tune turn detection](#lab-3--tune-turn-detection) |
-| 7 — Make it yours | [Lab 4 — Make it yours](#lab-4--make-it-yours) |
-| 8 — Function calling | [Lab 5 — Let it call a function](#lab-5--let-it-call-a-function) |
+| 6 — Make it yours | [Lab 4 — Make it yours](#lab-4--make-it-yours) |
+| 7 — Function calling | [Lab 5 — Let it call a function](#lab-5--let-it-call-a-function) |
+| 8 — Optimization | [Lab 3 — Tune turn detection](#lab-3--tune-turn-detection) — Easy Mode reaches it earlier |
 | Finished | [Lab 6 — Take the config with you](#lab-6--take-the-config-with-you) |
 
 You'll finish each lab faster than the code track finishes its step. Spend the spare minutes on the **Going further** prompts — they're where the interesting arguments happen.
@@ -69,7 +69,7 @@ You'll finish each lab faster than the code track finishes its step. Spend the s
 
 Watch the message list while you talk. Every turn appears there, and **Expand all** opens the raw events underneath — this is the same stream of messages the Python code is reacting to. Turn on **Show client audio** to see your own audio going out alongside the agent's coming back.
 
-**One thing that will trip you up:** while a conversation is open, the settings are locked. The playground tells you so — *"While the connection is open, you cannot update the agent in the Playground."* Click **End Conversation**, change your setting, then start again. That's a playground rule, not an API rule; over the API you can update a live agent mid-conversation.
+**One thing that will trip you up:** while a conversation is open, the playground locks the settings. The playground tells you so — *"While the connection is open, you cannot update the agent in the Playground."* Click **End Conversation**, change your setting, then start again. That's a playground rule, not an API rule; over the API you can update a live agent mid-conversation.
 
 > **Check yourself** — Three models run behind that conversation. Which one decided *when you were finished speaking*?
 
@@ -85,7 +85,7 @@ Ask the agent a question with a long answer — *"explain how a car engine works
 
 It stops. That's **barge-in**, and it's the single feature that makes a voice agent feel like a conversation instead of a phone tree. The moment Deepgram hears speech that looks like a real turn, it stops generating audio and starts listening.
 
-You get it for free here. The code track spends a whole step on it, because in code you have to throw away the audio you already have queued up locally — the agent stops talking, but your speaker keeps playing the last two seconds it was handed. Ask a neighbor on the code track to show you their step 5 before and after.
+You get it for free here. The code track spends a whole step on it, because in code you have to throw away the audio you already have queued up locally — the agent stops talking, but your speaker keeps playing the last two seconds you handed it. Ask a neighbor on the code track to show you their step 5 before and after.
 
 **Now break it:** take your headphones off and let the agent talk into your own microphone. It interrupts itself, because it can't tell its voice from yours. This is why the room is full of headphones.
 
@@ -109,7 +109,7 @@ The agent's sense of "you're done talking" comes from Flux, Deepgram's conversat
 
 Try 0.5, then 0.9, saying the same halting sentence both times: *"I'd like to order a… uh… large coffee."* At 0.5 the model calls the turn during your "uh." At 0.9 it waits you out, and the reply arrives noticeably later.
 
-There's no correct value. A drive-through agent wants speed; an agent taking a credit card number over the phone wants patience. You're choosing which mistake to make.
+No value is correct in the abstract. A drive-through agent wants speed; an agent taking a credit card number over the phone wants patience. You're choosing which mistake to make.
 
 > **⏸ Pause — check in with the instructor**
 > Good moment to compare notes with the code track, who are measuring the same trade-off in milliseconds.
@@ -120,11 +120,11 @@ There's no correct value. A drive-through agent wants speed; an agent taking a c
 
 End the conversation first, then open the settings panel. Four fields matter:
 
-**Agent prompt** — the standing instructions, sent with every turn. Personality, job, boundaries.
+**Agent prompt** — the standing instructions the model sees with every turn. Personality, job, boundaries.
 
 **Greeting (Optional)** — the first thing the agent says. Leave it blank and the agent waits for the user to speak first, which is the right choice more often than people expect.
 
-**Voice** (under the **Voice** section) — purely how it sounds. It has no effect on what gets said.
+**Voice** (under the **Voice** section) — purely how it sounds. It changes nothing about what the agent says.
 
 **LLM** and **LLM Temperature (Optional)** — the brain, and how much it varies. Low temperature for an agent that must say the same thing every time; higher for a chatty one.
 
@@ -160,7 +160,7 @@ Morning! What can I get started for you?
 
 Start the conversation and order something. Then push at it: ask Sam for the weather, ask it to write you a Python script, ask what it thinks about a movie. A prompt that holds under pressure is the difference between a demo and a product.
 
-**Then change one thing at a time.** Swap the voice and run the same order — same words, different job applicant. Raise the temperature to 1.2 and watch it get chatty and start improvising drinks. Load the **Healthcare** or **Customer support** preset and read its prompt closely; those are written by people who do this professionally, and they're worth stealing structure from.
+**Then change one thing at a time.** Swap the voice and run the same order — same words, different job applicant. Raise the temperature to 1.2 and watch it get chatty and start improvising drinks. Load the **Healthcare** or **Customer support** preset and read its prompt closely; professionals wrote those, and they're worth stealing structure from.
 
 > **Check yourself** — Name the two prompt instructions that matter for speech but not for chat.
 
@@ -213,7 +213,7 @@ Then toggle **End Conversation (Example)** on, start again, and say goodbye. Dif
 }
 ```
 
-With `endpoint` set, Deepgram calls that URL itself — server-side, no application of yours involved. Leave `endpoint` out and Deepgram sends the call down the connection to your app and waits for you to answer, which is what you want when the function touches local state or credentials you'd rather not put on a public URL. That single omitted field is the whole distinction, and it's what the code track's step 8 is built around.
+With `endpoint` set, Deepgram calls that URL itself — server-side, no application of yours involved. Leave `endpoint` out and Deepgram sends the call down the connection to your app and waits for you to answer, which is what you want when the function touches local state or credentials you'd rather not put on a public URL. That single omitted field is the whole distinction, and the code track's step 7 turns on it.
 
 The playground's Functions section ships those two examples rather than an editor, so writing your own is where Easy Mode hands off. You now know exactly what to write, and the [function calling documentation](https://developers.deepgram.com/docs/voice-agents-function-calling) has the rest.
 
@@ -226,7 +226,7 @@ You've built something. Don't leave it in a browser tab.
 
 - The **Code Sample** tab turns your current settings into working code you can hand to a developer, or open yourself later.
 - **Use this config and get started** and the `config.json` download give you the raw settings document — the same JSON from the top of this page, now filled in with your choices.
-- You'll need an API key to run any of it. **Get an API key** → **Create Key** in the playground, or grab one from [console.deepgram.com](https://console.deepgram.com/). Copy the secret when it's shown; you can't see it again.
+- You'll need an API key to run any of it. **Get an API key** → **Create Key** in the playground, or grab one from [console.deepgram.com](https://console.deepgram.com/). Copy the secret when the playground shows it; you can't see it again.
 
 Hand that config to someone on the code track and ask them to drop it into `steps/99-final/main.py`. Watching your barista come out of somebody else's terminal is a good way to end the session.
 
@@ -234,7 +234,7 @@ Hand that config to someone on the code track and ask them to drop it into `step
 
 **"Log in or sign up to talk to the agent"** — The agent needs an account. Free to create, no card.
 
-**The settings are greyed out** — A conversation is open. Click **End Conversation** first.
+**The settings are grayed out** — A conversation is open. Click **End Conversation** first.
 
 **It interrupts itself constantly** — Speakers, not headphones. It's hearing its own voice.
 

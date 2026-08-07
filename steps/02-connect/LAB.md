@@ -16,7 +16,7 @@ This folder runs as-is:
 uv run steps/02-connect/main.py
 ```
 
-A page opens with a **Connect** button. Press it and you get `>> Connection opened` in the terminal, a handshake, and then nothing useful — the settings go out and every reply is thrown away. Your job is to fix the second half of that.
+A page opens with a **Connect** button. Press it and you get `>> Connection opened` in the terminal, a handshake, and then nothing useful — the settings go out and nothing catches the replies. Your job is to fix the second half of that.
 
 Nothing from Step 1 carries forward — that was a diagnostic. The agent program starts here.
 
@@ -29,7 +29,7 @@ The Voice Agent API collapses that into one WebSocket. You describe all three co
 - **`listen`** — Flux, Deepgram's conversational speech-to-text model. Turn detection lives *inside* the model, which is why you'll never write voice activity detection in this workshop.
 - **`think`** — the LLM. `gpt-4o-mini` here, brokered by Deepgram, so your Deepgram key covers it.
 - **`speak`** — Flux TTS. The `flux-` prefix routes to Deepgram's v2 Speak backend automatically.
-- **`greeting`** — what the agent says first, added to the conversation history so the LLM knows it already said it.
+- **`greeting`** — what the agent says first, which Deepgram adds to the conversation history so the LLM knows it already said it.
 
 Every later step in this workshop either adds to that object or reacts to what it produces.
 
@@ -88,7 +88,7 @@ The agent already spoke. That `[assistant]` line is `ConversationText`, and the 
 
 Notice `>> Welcome` and `>> History` arriving through the fallthrough branch. Neither has an explicit `elif`, and both still showed up. That's the design working.
 
-The `CLIENT_MESSAGE_TIMEOUT` at the end is expected. The agent wants a *continuous* media stream and hangs up after about fifteen seconds of receiving none. Nothing sends audio until Step 4. Worth seeing now so you recognise it later.
+Expect the `CLIENT_MESSAGE_TIMEOUT` at the end. The agent wants a *continuous* media stream and hangs up after about fifteen seconds of receiving none. Nothing sends audio until Step 4. Worth seeing now so you recognize it later.
 
 > **⏸ Pause — check in with the instructor**
 > Everyone should see `>> Settings applied` and an `[assistant]` line before moving on. This is the first real milestone, and a failure here is almost always the API key.

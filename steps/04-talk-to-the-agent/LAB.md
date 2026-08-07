@@ -20,7 +20,7 @@ This is the step where it becomes a voice agent.
 
 ## The mental model
 
-The microphone lives in the browser and has been open since you pressed Connect. What is missing is the instruction to do anything with what it captures.
+The microphone lives in the browser and has been open since you pressed Connect. It just has no instruction to do anything with what it captures.
 
 That instruction is `on_media`, and it is one line:
 
@@ -29,9 +29,9 @@ def on_media(agent, audio):
     agent.send_media(audio)
 ```
 
-The shortness is the lesson. Here is the part that surprises people coming from traditional speech pipelines: there is no voice activity detection anywhere in this file. No silence trimming, no energy threshold, no "has the user stopped talking" logic. Flux performs turn detection **inside the model**, server-side. Your entire job on the outbound side is keeping the pipe full and letting Flux decide the rest.
+The shortness is the lesson. Here is the part that surprises people coming from traditional speech pipelines: this file contains no voice activity detection at all. No silence trimming, no energy threshold, no "has the user stopped talking" logic. Flux performs turn detection **inside the model**, server-side. Your entire job on the outbound side is keeping the pipe full and letting Flux decide the rest.
 
-Two things happen before the audio reaches you, both in `CaptureProcessor` in [`web/static/worklets.js`](../../web/static/worklets.js), and both are work you would otherwise be doing yourself:
+Two things happen before the audio reaches you, both in `CaptureProcessor` in [`web/static/worklets.js`](../../web/static/worklets.js), and both are work you would otherwise do yourself:
 
 **Chunking.** Audio hardware delivers 128 frames at a time — about 5 ms. Flux wants 80 ms, which is 1920 frames at 24 kHz, exactly fifteen of those blocks. The worklet accumulates and ships a chunk when it is full.
 
@@ -49,7 +49,7 @@ That indirection exists for a specific reason worth knowing. The underlying `web
 
 **TODO 4.2 — Pass it to the bridge.** Add `on_media=on_media` to the `bridge.run(...)` call.
 
-Passing it is what tells the page to start capturing, and *when* it starts matters: only after `SettingsApplied` arrives. The agent discards media received before the handshake completes, so starting any earlier throws away your first words. The bridge enforces that — it is why the page waits for a `ready` message instead of sending audio as soon as the socket opens.
+Passing it tells the page to start capturing, and *when* it starts matters: only after `SettingsApplied` arrives. The agent discards media received before the handshake completes, so starting any earlier throws away your first words. The bridge enforces that — it is why the page waits for a `ready` message instead of sending audio as soon as the socket opens.
 
 ## Verify
 

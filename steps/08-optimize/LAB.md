@@ -29,7 +29,7 @@ EOT_TIMEOUT_MS = 5000
 
 They're the reason turn-taking has felt reasonable all workshop. Reasonable is not the same as right for what *you're* building, and this is where you find out what they've been doing.
 
-Turn detection is the hardest problem in voice, and it's an unwinnable trade. End the turn too early and you cut people off mid-thought. End it too late and every exchange has a dead pause in it. There's no setting that avoids both; there's only the setting that's right for your use case.
+Turn detection is the hardest problem in voice, and it's an unwinnable trade. End the turn too early and you cut people off mid-thought. End it too late and every exchange has a dead pause in it. No setting avoids both. The only question is which one fits your use case.
 
 Flux scores every turn for end-of-turn confidence as the audio streams in. Both constants act on that score:
 
@@ -66,7 +66,7 @@ Run the agent four times and hold the same short conversation each time. Write d
 
 Watch `>> Latency:` alongside. The number moves, and it moves in the direction the setting predicts.
 
-There's no correct answer here — it depends entirely on what you're building. A drive-through order taker wants low thresholds and fast turns. A therapy intake bot wants high thresholds and long silences. Pick the one that matches the agent you actually want.
+No correct answer exists here — it depends entirely on what you're building. A drive-through order taker wants low thresholds and fast turns. A therapy intake bot wants high thresholds and long silences. Pick the one that matches the agent you actually want.
 
 > **Check yourself** — The agent keeps cutting you off when you pause to think. Which setting do you change, and in which direction?
 
@@ -88,7 +88,7 @@ And the two extreme settings sound obviously different from each other.
 
 **No `>> Latency:` line** — Either the lines are still commented out, or `total_latency` is absent on your turns. Print `message` directly in that branch to see what actually arrived.
 
-**Changing the values does nothing** — Check the console for a `>> Agent warning`. A value outside its valid range is rejected and warned about rather than failing the handshake.
+**Changing the values does nothing** — Check the console for a `>> Agent warning`. The agent rejects a value outside its valid range and warns you rather than failing the handshake.
 
 **Latency is high across the board** — `total_latency` includes the LLM. `gpt-4o-mini` is the fast option; if you switched to `gpt-4o` back in Step 6, this is the bill for it. Switch back and watch the number drop.
 
@@ -98,7 +98,7 @@ And the two extreme settings sound obviously different from each other.
 
 ## Going further
 
-Add `eager_eot_threshold=0.5` to the listen provider. Flux starts the LLM on a *probable* turn end and discards the work if you keep talking. Latency drops noticeably; your LLM call volume goes up, because some of those calls get thrown away. It must be less than or equal to `eot_threshold`.
+Add `eager_eot_threshold=0.5` to the listen provider. Flux starts the LLM on a *probable* turn end and discards the work if you keep talking. Latency drops noticeably; your LLM call volume goes up, because Flux throws some of those calls away. Keep it less than or equal to `eot_threshold`.
 
 That trade — spend compute to buy responsiveness — is one of the more interesting levers in production voice, and worth knowing before you need it.
 

@@ -22,9 +22,9 @@ This step has the least code in the workshop and the most to play with.
 
 Three settings define the agent's character, and they're independent of each other:
 
-**`prompt`** — the standing instructions, prepended to every user turn. Personality, job, boundaries.
+**`prompt`** — the standing instructions the model sees ahead of every user turn. Personality, job, boundaries.
 
-**`speak.provider.model`** — the voice. Purely how it sounds; it has no effect on what gets said.
+**`speak.provider.model`** — the voice. Purely how it sounds; it changes nothing about what the agent says.
 
 **`greeting`** — the opening line, and the only thing the agent says before it knows anything about the user. It's doing all the work of setting expectations.
 
@@ -34,7 +34,7 @@ The prompt deserves the most attention, because writing prompts for *speech* dif
 
 **Tell it to be brief.** A four-sentence answer that scans fine in a chat window feels interminable when you have to sit through it. Voice punishes verbosity in a way text doesn't.
 
-Keep the prompt short for a second reason: every token is re-sent on every turn, and long prompts slow the first reply.
+Keep the prompt short for a second reason: every turn re-sends every token, and long prompts slow the first reply.
 
 > **Check yourself** — Name the two prompt instructions that matter for speech but not for chat.
 
@@ -54,7 +54,7 @@ Misspell one deliberately first and run it. Once you've finished TODO 6.4 you'll
 
 **TODO 6.4 — Surface warnings.** Add a `Warning` branch mirroring the `Error` branch above it.
 
-Warnings are where rejected settings go. A misspelled voice or an out-of-range threshold arrives here rather than failing the handshake — so without this branch, a bad setting gets silently ignored and you're left wondering why nothing changed. It's also what will make Step 8's thresholds debuggable.
+Warnings are where rejected settings go. A misspelled voice or an out-of-range threshold arrives here rather than failing the handshake — so without this branch, the agent silently ignores a bad setting and you're left wondering why nothing changed. It also makes Step 8's thresholds debuggable.
 
 ## Verify
 

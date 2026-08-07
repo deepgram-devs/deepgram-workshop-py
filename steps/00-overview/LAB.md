@@ -1,6 +1,6 @@
 # Step 0 — Overview
 
-**Goal:** Understand what a voice agent is made of before you write a line of it.
+**Goal:** Understand the parts of a voice agent before you write a line of it.
 
 **You'll learn**
 
@@ -35,7 +35,7 @@ The Voice Agent API collapses all three into one WebSocket. You describe what yo
 
 …and you get a socket. Audio bytes go in, audio bytes come out. Deepgram runs the pipeline server-side and manages the handoffs between providers.
 
-Everything you build over the next eight steps is *configuring that orchestrator* and reacting to what it sends you. You will never reimplement it.
+Over the next eight steps you *configure that orchestrator* and react to what it sends you. You will never reimplement it.
 
 > **Check yourself** — Name two things the Voice Agent API handles that you'd otherwise write yourself.
 
