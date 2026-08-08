@@ -205,7 +205,10 @@ function describe(error) {
  * Open the WebSocket and route its frames.
  */
 function openSocket() {
-  const socket = new WebSocket(`ws://${location.host}/ws`);
+  // Follow the page's own protocol scheme. On the host that is http:// and ws://
+  // Note: wss:// should be used in production, but this workshop is designed to run on localhost.
+  const scheme = location.protocol === "https:" ? "wss:" : "ws:";
+  const socket = new WebSocket(`${scheme}//${location.host}/ws`);
   socket.binaryType = "arraybuffer";
   session.socket = socket;
 
