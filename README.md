@@ -8,9 +8,23 @@ Start at Step 1 or drop in at Step 5; each folder already contains everything th
 
 **Not a developer, or on a locked-down laptop, Chromebook, or tablet?** [README_EASY_MODE.md](README_EASY_MODE.md) runs the same workshop entirely in the browser through the [Deepgram Playground](https://playground.deepgram.com/voice-agent) — no install, no terminal. Its labs map one to one onto the steps below, so a mixed room stays in sync.
 
+## Prerequisites
+
+| You need | Why, and what counts |
+|---|---|
+| [uv](https://docs.astral.sh/uv/getting-started/installation/) | The only thing to install. It fetches Python 3.13 and every dependency itself, so you do not need Python already. |
+| A free [Deepgram API key](https://console.deepgram.com/signup?jump=keys) | Signup takes a minute and the free credit covers this workshop with room to spare. |
+| A current browser | Chrome, Firefox, or Safari. The browser is the microphone and the speaker — it needs `getUserMedia` and `AudioWorklet`. |
+| Wired headphones | Not strictly required. Step 5 is where the difference shows. |
+| A terminal | macOS, Linux, Windows, and WSL all work — under WSL the audio is Windows' problem, not yours. |
+
+Being comfortable with Python helps. No audio or machine-learning background needed.
+
+**Don't want to install anything?** [.devcontainer/README.md](.devcontainer/README.md) runs the whole workshop in a container — GitHub Codespaces needs nothing local at all, and VS Code Dev Containers needs only Docker. Both arrive with `uv sync` already run and `.env` already created, so you paste your key and start at Step 1. Your microphone and browser stay on your machine either way; the only thing a container takes away is the `--local` flag below.
+
 ## Setup
 
-You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and a free [Deepgram API key](https://console.deepgram.com/signup?jump=keys).
+Once you have uv and a key:
 
 ```bash
 uv sync

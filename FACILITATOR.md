@@ -10,7 +10,7 @@ Everything you need to run this workshop in a room. Attendees don't need this fi
 | **Full run** | ~3 hours (Steps 0–8) |
 | **Short run** | ~90 minutes (Steps 0–5) — still ends with a working voice agent |
 | **Staffing** | One instructor, plus one floating helper per ~15 attendees |
-| **Prerequisites** | Comfortable with Python; no audio or ML background needed |
+| **Prerequisites** | Comfortable with Python is a plus, but not a requirement; no audio or ML background needed |
 | **Cost per attendee** | Well under $1. New accounts get $200 in credit |
 
 The single biggest predictor of whether this workshop goes well is how many people arrive with a working environment. Send the pre-event email.
