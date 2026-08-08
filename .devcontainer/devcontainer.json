@@ -1,0 +1,61 @@
+// Deepgram Voice Agent Workshop -- Python edition.
+//
+// Opens the same workshop in a container: locally through the VS Code Dev
+// Containers extension, or in the browser through GitHub Codespaces. Nothing in
+// steps/ or web/ knows it is here, and the commands in README.md are unchanged.
+//
+// See .devcontainer/README.md for the two things that behave differently in a
+// container -- the microphone, and --local.
+{
+  "name": "Deepgram Voice Agent Workshop (Python)",
+  "build": { "dockerfile": "Dockerfile" },
+
+  // The virtual environment lives in a named volume rather than in the
+  // bind-mounted workspace. Two reasons, and both of them cost a room time when
+  // they go wrong: a .venv built on the host holds macOS or Windows binaries
+  // that mean nothing in here, and package installs into a bind mount are slow
+  // enough on macOS to be noticed. The path is still .venv, so `uv run` and the
+  // README's commands do not change.
+  "mounts": [
+    {
+      "source": "deepgram-workshop-py-venv",
+      "target": "${containerWorkspaceFolder}/.venv",
+      "type": "volume"
+    }
+  ],
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "waitFor": "postCreateCommand",
+
+  // Every step from Step 2 on serves this port, and Step 1's browser check uses
+  // it too. Forwarding is what makes the page reachable from a browser that is
+  // outside the container -- which is the only kind of browser that has a
+  // microphone attached.
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "Workshop (voice agent)",
+      // The real browser, not VS Code's built-in preview: getUserMedia needs a
+      // permission prompt and a device, and the embedded preview has neither.
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.terminal.activateEnvironment": false,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        }
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}
