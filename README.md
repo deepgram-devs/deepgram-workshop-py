@@ -10,15 +10,15 @@ Start at Step 1 or drop in at Step 5; each folder already contains everything th
 
 ## Prerequisites
 
-| You need | Why, and what counts |
+| You need | Why you need it |
 |---|---|
-| [uv](https://docs.astral.sh/uv/getting-started/installation/) | The only thing to install. It fetches Python 3.13 and every dependency itself, so you do not need Python already. |
-| A free [Deepgram API key](https://console.deepgram.com/signup?jump=keys) | Signup takes a minute and the free credit covers this workshop with room to spare. |
+| [uv](https://docs.astral.sh/uv/getting-started/installation/) | The only thing to install. It fetches Python 3.13 and every dependency itself, so you don't need Python already. |
+| A free [Deepgram API key](https://console.deepgram.com/signup?jump=keys) | Signup takes a minute, and the free credit covers this workshop with room to spare. |
 | A current browser | Chrome, Firefox, or Safari. The browser is the microphone and the speaker — it needs `getUserMedia` and `AudioWorklet`. |
-| Wired headphones | Not strictly required. Step 5 is where the difference shows. |
+| Wired headphones | Your browser cancels most of the echo from your speakers, but not all of it on every browser, and Step 5 is where the difference shows. |
 | A terminal | macOS, Linux, Windows, and WSL all work — under WSL the audio is Windows' problem, not yours. |
 
-Being comfortable with Python helps. No audio or machine-learning background needed.
+Being comfortable with Python helps. An audio or machine-learning background doesn't.
 
 **Don't want to install anything?** [.devcontainer/README.md](.devcontainer/README.md) runs the whole workshop in a container — GitHub Codespaces needs nothing local at all, and VS Code Dev Containers needs only Docker. Both arrive with `uv sync` already run and `.env` already created, so you paste your key and start at Step 1. Your microphone and browser stay on your machine either way; the only thing a container takes away is the `--local` flag below.
 
@@ -38,8 +38,6 @@ That last command checks your key in the terminal, then opens a browser page tha
 
 Every step from Step 2 on serves a page at `http://127.0.0.1:8000` and opens it for you. **It has to be `127.0.0.1`** — browsers only grant microphone access on a secure context, and a LAN address is not one.
 
-**Headphones still help.** Your browser cancels most of the echo from your speakers, but not all of it on every browser, and Step 5 is where the difference shows.
-
 ### Running in another region
 
 Deepgram serves the same APIs from more than one place. Global is the default; the EU and AU endpoints process audio inside those geographies. Pick one in `.env`:
@@ -50,7 +48,7 @@ DEEPGRAM_REGION=eu        # global (default), eu, or au
 
 That is the whole change. Your key works in every region, no step's code names one, and every step reads the same `.env` — so one line moves Steps 1 through 8 together.
 
-Step 1 then starts the agent against whichever endpoint you picked and reports whether all three models are served there. Model availability differs by region and moves over time, so that — not the key, and not whether the host answers — is the question worth asking before a room of people hits Step 2.
+Step 1 then starts the agent against whichever endpoint you picked and reports whether that endpoint serves all three models. Model availability differs by region and moves over time, so that — not the key, and not whether the host answers — is the question worth asking before a room of people hits Step 2.
 
 [web/region.py](web/region.py) has the details, and the same mechanism points the workshop at a Deepgram Dedicated or self-hosted deployment.
 

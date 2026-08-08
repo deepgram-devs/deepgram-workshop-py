@@ -10,8 +10,8 @@ codespace on main*. Nothing local at all.
 [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers),
 open this folder, and accept *Reopen in Container*. Docker has to be running.
 
-Either way the container builds, `uv sync` runs, and `.env` is created from
-`.env.example`. Paste your key into `.env` and start at Step 1 exactly as
+Either way the container builds, `uv sync` runs, and `post-create.sh` seeds
+`.env` from `.env.example`. Paste your key into `.env` and start at Step 1 exactly as
 [README.md](../README.md) describes:
 
 ```bash
@@ -59,7 +59,7 @@ uv run steps/04-talk-to-the-agent/main.py --no-open
 ## `--local` does not work in here
 
 `--local` is the PortAudio path — the system microphone and speaker, no browser.
-There is no system microphone in a container, so this is the one flag in the
+A container has no system microphone, so this is the one flag in the
 workshop that a container takes away. Every step's default path works, and it is
 the path the workshop is written around; if you specifically want to exercise
 PortAudio, run that step on the host instead.

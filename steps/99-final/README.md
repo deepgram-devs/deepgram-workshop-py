@@ -25,7 +25,7 @@ Roughly 300 lines, most of them comments, doing seven things:
 
 Notice what is *not* here: no device handling, no resampling, no chunking, no permission prompts. That is all in [web/](../../web/), which every step shares and nobody edits — see [web/README.md](../../web/README.md) for how it works.
 
-The threading rule the whole design rests on: `on_message` runs on the SDK's receive loop, which is also the thread carrying audio. It may not block. That is why `handle_function_call` is written the way it is, and it is true on both the browser and `--local` paths.
+The threading rule the whole design rests on: `on_message` runs on the SDK's receive loop, which is also the thread carrying audio. It may not block. That is why `handle_function_call` looks the way it does, and it holds on both the browser and `--local` paths.
 
 ## Where to go from here
 

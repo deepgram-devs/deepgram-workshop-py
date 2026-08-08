@@ -1,8 +1,8 @@
 # web/ — the browser bridge
 
-Everything in this folder is shared by every step, and no step edits it. It is the audio layer: a local web server, one WebSocket to a browser tab, and the threads that keep a blocking Deepgram socket from stalling an asyncio event loop.
+Every step shares everything in this folder, and no step edits it. It is the audio layer: a local web server, one WebSocket to a browser tab, and the threads that keep a blocking Deepgram socket from stalling an asyncio event loop.
 
-The point of it existing as a folder rather than as part of each step is the boundary. `steps/NN/main.py` describes an agent and reacts to what it says. This describes how sound gets in and out. Swapping this for a Twilio media stream is a real project; swapping it should not require touching a single line of agent code.
+It lives in its own folder rather than inside each step to draw a boundary. `steps/NN/main.py` describes an agent and reacts to what it says. This describes how sound gets in and out. Swapping this for a Twilio media stream is a real project; swapping it should not require touching a single line of agent code.
 
 ## Why the browser
 
@@ -66,7 +66,7 @@ One WebSocket at `/ws`. Binary frames are PCM, in both directions. Text frames a
 | → browser | `{"type":"event","name":…}` | thinking / started speaking / audio done |
 | → browser | `{"type":"status"｜"latency"｜"error"｜"warning"}` | interface chrome |
 
-The audio format is served separately at `GET /api/audio`, read from the step's `SETTINGS`. The page has to ask for it over HTTP rather than wait for it on the socket, because an `AudioContext`'s sample rate is fixed when it is constructed and construction has to happen inside the click handler that unlocks it.
+A separate endpoint, `GET /api/audio`, reports the audio format out of the step's `SETTINGS`. The page has to ask for it over HTTP rather than wait for it on the socket, because an `AudioContext`'s sample rate is fixed when it is constructed and construction has to happen inside the click handler that unlocks it.
 
 Microphone level never crosses the wire. The capture worklet computes it and drives the meter locally.
 
@@ -76,8 +76,8 @@ Microphone level never crosses the wire. The capture worklet computes it and dri
 
 **Barge-in clears two queues.** Telling the browser to flush while seconds of TTS still sit in the Python-side `Outbox` just means the pump refills it. `Outbox.drop_audio` walks the queue and removes the audio while leaving control frames alone, and it runs *before* the `clear` is queued. Both go through `call_soon_threadsafe`, which is FIFO, so that ordering holds. This is why `Outbox` is a `deque` and not an `asyncio.Queue` — you cannot selectively drop from a queue.
 
-**The worklets do not assume a sample rate.** The page asks for an `AudioContext` at 24 kHz. Chrome and desktop Safari honour it; iOS Safari ignores it and can change rate mid-session when a Bluetooth headset connects. Both processors read the real rate back and resample when it differs, with an exact fast path for when it does not.
+**The worklets do not assume a sample rate.** The page asks for an `AudioContext` at 24 kHz. Chrome and desktop Safari honor it; iOS Safari ignores it and can change rate mid-session when a Bluetooth headset connects. Both processors read the real rate back and resample when it differs, with an exact fast path for when it does not.
 
 ## Editing it
 
-`uvx ruff check web` is part of `scripts/verify_steps.py`, and the repo enforces Google-style docstrings on every function. There is no build step, no bundler, and no npm: the static files are served as written, so a browser reload picks up a change to `app.js` immediately. Python changes need a restart.
+`uvx ruff check web` is part of `scripts/verify_steps.py`, and the repo enforces Google-style docstrings on every function. No build step, no bundler, no npm: the server hands the static files over exactly as written, so a browser reload picks up a change to `app.js` immediately. Python changes need a restart.
