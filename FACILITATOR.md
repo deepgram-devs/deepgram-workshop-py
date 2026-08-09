@@ -59,6 +59,44 @@ That is the check that matters regionally. Model availability is per-region and 
 
 Add the `DEEPGRAM_REGION` line to the pre-event email if attendees will clone the repo themselves — `.env.example` documents it, but people paste their key and stop reading.
 
+## The slide deck
+
+[slides/deepgram-voice-agent-workshop.pptx](slides/deepgram-voice-agent-workshop.pptx) is a
+PowerPoint-compatible projection deck that mirrors the run of show below.
+
+**The slides are a visual aid for the room, not a talk.** You do not need to read through them
+or present each one before the workshop starts — most of them exist to be left on screen while
+people work, so anyone who looks up can see which step the room is on, the command to run, and
+what has to be true before we move. Only the six Step 0 slides are presented, and that block is
+capped at ten minutes.
+
+How the deck is laid out:
+
+| Slides | What they are |
+|---|---|
+| 1–6 | Title, what they'll build, prerequisites, the two tracks, and this run of show |
+| 7–13 | Step 0. The only block you actually present |
+| 14–23 | Steps 1–5, one gate slide each, plus the break |
+| 24–29 | Steps 6–8 |
+| 30–33 | Wrap, where to go next, links |
+| 34–37 | Appendix — the five failures, the check-yourself answers, and regions. Not part of the run; jump to them when the room needs them |
+
+Each step gate slide carries the step number, its clock time, its duration, and the matching Easy
+Mode lab, so a mixed room can read its position off the screen without asking. The amber **pause**
+marker on a slide is the same sync point marked in that step's `LAB.md` — that is the one thing on
+the slide you should say out loud.
+
+Every slide has speaker notes with the things worth saying, the failures to watch for, and the
+check-yourself answer for that step. They are for you during the session; they are not a script,
+and nothing in them needs covering up front.
+
+Slide 33 is sized to hold QR codes and doesn't ship with them — generate six from the links table
+at the end of this file and drop them in if you're presenting to a conference floor, where nobody
+will type a URL.
+
+The deck is generated from a script rather than hand-edited. If you change a step's timing or its
+sync point here, change it on that step's slide too.
+
 ## Run of show
 
 Times assume a 3-hour slot with one break. The **⏸** rows are the sync points marked in each `LAB.md` — hold the room at these.

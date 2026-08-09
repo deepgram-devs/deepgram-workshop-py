@@ -105,6 +105,8 @@ The audio plumbing itself lives in [web/](web/) — a small FastAPI bridge and t
 
 [FACILITATOR.md](FACILITATOR.md) has the run of show with timings and sync points, a pre-event setup email to send a week ahead, the five environment failures you'll actually hit, an answer key for the Check-yourself questions, and guidance on managing pace spread in a room.
 
+[slides/deepgram-voice-agent-workshop.pptx](slides/deepgram-voice-agent-workshop.pptx) is the projection deck that goes with it, a visual aid to hold the room on the current step, not a talk to deliver.
+
 `scripts/verify_steps.py` checks that every step compiles, lints, and leaks no unfinished TODO markers into the next folder's answer key:
 
 ```bash
