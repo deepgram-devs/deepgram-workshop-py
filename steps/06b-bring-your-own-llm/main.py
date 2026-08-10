@@ -1,16 +1,36 @@
-"""Step 6 - Make it yours.
+"""Step 6b - Bring your own LLM (optional).
 
-Runs exactly as Step 5 left it: an interruptible agent that holds a
-conversation.
+Runs exactly as Step 6 left it, with the prompt and voice reset to neutral.
 
-Everything so far has been plumbing. This step is where the agent becomes
-*yours* -- its job, its personality, its voice, its opening line. There is less
-code here than in any other step and more to play with.
+Optional. Every provider so far has been one Deepgram brokered for you -- your
+Deepgram key paid for the LLM call and no second account was involved. This step
+is what happens when the brain has to be *yours*: your AWS account, your model
+access, your bill. It needs AWS credentials with Bedrock access, and Bedrock
+model access is granted per model and per region, so it is not something you can
+usually sort out in the five minutes this step takes.
 
-Look for the "TODO (Step 6.x)" blocks below.
+Skipping it costs you nothing. Step 7 continues from Step 6 either way, and this
+file falls back to OpenAI when no AWS credentials are present -- so it runs
+whether or not you finish it.
 
-Run it with:  uv run steps/06-make-it-yours/main.py
+Look for the "TODO (Step 6b.x)" blocks below.
+
+Run it with:  uv run steps/06b-bring-your-own-llm/main.py
 """
+
+# ---- TODO (Step 6b.1): Imports --------------------------------------------
+# You need three more imports for this step. Add them to the third-party block
+# below, keeping it alphabetical:
+#
+#   from deepgram.types.aws_bedrock_think_provider_credentials import (
+#       AwsBedrockThinkProviderCredentials,
+#   )
+#   from deepgram.types.think_settings_v1endpoint import ThinkSettingsV1Endpoint
+#   ThinkSettingsV1Provider_AwsBedrock  -> alongside ThinkSettingsV1Provider_OpenAi
+#                                          on the think_settings_v1provider line
+# ---------------------------------------------------------------------------
+
+import os
 
 from deepgram.agent.v1.types import (
     AgentV1Settings,
@@ -42,6 +62,87 @@ SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For 
 EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
 EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
 
+# Everything Bedrock needs comes from .env, because none of it belongs in a file
+# you might commit. See .env.example -- the whole block is optional and only
+# this step reads it.
+AWS_REGION = os.getenv("AWS_REGION", "us-east-2")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN", "")  # STS only. Leave it unset for long-lived IAM keys.
+
+# Bedrock model IDs are passed through to Bedrock untouched, so this is a plain
+# string with no validation behind it -- a typo comes back from AWS, not from
+# the SDK. The "us." prefix is a cross-region inference profile and has to match
+# the region below.
+BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL") or "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+
+# One prompt, used whichever provider ends up answering. Keeping it out of the
+# branches below is the only reason they stay readable.
+PROMPT = (
+    "You are a helpful AI assistant. Keep your responses brief. "
+    "You are speaking out loud, so never use markdown, bullet points, or emoji."
+)
+
+
+def think_settings() -> ThinkSettingsV1:
+    """Build the think settings, on Bedrock when AWS credentials are present.
+
+    Falling back to OpenAI rather than failing is deliberate. This step is
+    optional, and the file has to keep running for someone who never got Bedrock
+    access -- including someone who is halfway through the TODO below.
+
+    Returns:
+        The think settings the agent is configured with.
+    """
+    # ---- TODO (Step 6b.2): Think on Bedrock -------------------------------
+    # Return Bedrock settings when AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+    # are both set. Guarding on them is what keeps this file runnable without
+    # AWS -- do not drop the guard.
+    #
+    # Build the credentials first. session_token is STS-only, and it has to be
+    # *absent* rather than None for long-lived IAM keys -- the SDK serializes
+    # any field you pass explicitly, so session_token=None would put a literal
+    # null on the wire alongside type="iam":
+    #
+    #   credentials = {
+    #       "type": "sts" if AWS_SESSION_TOKEN else "iam",
+    #       "region": AWS_REGION,
+    #       "access_key_id": AWS_ACCESS_KEY_ID,
+    #       "secret_access_key": AWS_SECRET_ACCESS_KEY,
+    #   }
+    #   if AWS_SESSION_TOKEN:
+    #       credentials["session_token"] = AWS_SESSION_TOKEN
+    #
+    # Then two halves, and Bedrock needs both. Miss either and the handshake
+    # fails:
+    #
+    #   provider=ThinkSettingsV1Provider_AwsBedrock(
+    #       type="aws_bedrock",
+    #       model=BEDROCK_MODEL,
+    #       temperature=0.7,
+    #       credentials=AwsBedrockThinkProviderCredentials(**credentials),
+    #   ),
+    #   endpoint=ThinkSettingsV1Endpoint(
+    #       url=f"https://bedrock-runtime.{AWS_REGION}.amazonaws.com/",
+    #   ),
+    #
+    # Keep prompt=PROMPT on it, or your agent loses the instruction that stops
+    # it reading markdown aloud.
+    #
+    # The endpoint's region has to match the credentials' region. They are
+    # written down twice here on purpose -- that mismatch is the second most
+    # common way this step fails, after model access.
+    # -----------------------------------------------------------------------
+    return ThinkSettingsV1(
+        provider=ThinkSettingsV1Provider_OpenAi(
+            type="open_ai",
+            model="gpt-4o-mini",
+            temperature=0.7,
+        ),
+        prompt=PROMPT,
+    )
+
+
 SETTINGS = AgentV1Settings(
     audio=AgentV1SettingsAudio(
         input=AgentV1SettingsAudioInput(encoding="linear16", sample_rate=SAMPLE_RATE),
@@ -61,77 +162,22 @@ SETTINGS = AgentV1Settings(
                 eot_timeout_ms=EOT_TIMEOUT_MS,  # Valid 500-60000. Hard ceiling: end the turn after this much silence no matter what the score says.
             ),
         ),
-        think=ThinkSettingsV1(
-            # ---- TODO (Step 6.3): Try a different brain -------------------
-            # gpt-4o-mini is fast and cheap, which matters more than raw
-            # capability when someone is waiting to hear a reply. Try
-            # "gpt-4o" and listen for the extra latency before deciding it is
-            # worth it -- the readout on the right of the browser's activity
-            # line puts a number on it, and Step 8 is where that number becomes
-            # the whole point. temperature controls variability: 0.0 for an agent
-            # that must say the same thing every time, 1.0+ for a chatty one.
-            #
-            # Other providers are available here too (Anthropic, Google, Groq,
-            # AWS Bedrock) via the matching ThinkSettingsV1Provider_* class.
-            # Deepgram brokers some of them and not others -- Step 6b is the
-            # optional detour into what changes when it does not.
-            # ---------------------------------------------------------------
-            provider=ThinkSettingsV1Provider_OpenAi(
-                type="open_ai",
-                model="gpt-4o-mini",
-                temperature=0.7,
-            ),
-            # The prompt is prepended to every user turn before it reaches the
-            # LLM. It is the agent's standing instructions -- personality, job,
-            # and boundaries. Keep it short: every token here is re-sent on
-            # every turn, and long prompts slow the first reply.
-            # ---- TODO (Step 6.1): Give your agent a job -------------------
-            # Replace the prompt below. Two rules that matter more than they
-            # look:
-            #
-            #   1. Tell it that it is *speaking*. LLMs default to writing.
-            #      Without this you get bullet points and asterisks read
-            #      aloud, and it is jarring the first time you hear it:
-            #        "You are speaking out loud, so never use markdown,
-            #         bullet points, or emoji."
-            #
-            #   2. Tell it to be brief. Text-chat length answers feel
-            #      interminable in a conversation.
-            #
-            # Then give it an actual job -- a barista taking an order, a
-            # support agent for a product you know, a dungeon master. Specific
-            # beats generic.
-            prompt="You are a helpful AI assistant. Keep your responses brief.",
-            # ---------------------------------------------------------------
-        ),
+        # The only line in SETTINGS that changes in this step. Everything about
+        # which LLM answers, and whose account it runs in, is behind this call.
+        think=think_settings(),
         # Flux TTS is Deepgram's streaming, turn-based voice engine built for
         # voice agents. The "flux-" model prefix routes the agent to the v2
         # Speak backend (wss://api.deepgram.com/v2/speak) automatically.
         speak=SpeakSettingsV1(
             provider=SpeakSettingsV1Provider_Deepgram(
                 type="deepgram",
-                # ---- TODO (Step 6.2): Pick a voice ------------------------
-                # Swap flux-alexis-en for another Flux voice. The full list is
-                # at https://developers.deepgram.com/docs/tts-models
-                #
-                # Deliberately misspell one first and run it. You will get a
-                # ">> Agent warning" once you finish TODO 6.4 -- a rejected
-                # voice is non-fatal, and the agent falls back rather than
-                # failing the handshake. Knowing that saves you an hour some
-                # day when an agent sounds wrong and nothing has errored.
-                # -----------------------------------------------------------
                 model="flux-alexis-en",
             ),
         ),
         # The agent's first utterance, spoken as soon as settings are applied.
         # It is added to the conversation history, so the LLM knows it already
         # said this and will not repeat itself on the first real turn.
-        # ---- TODO (Step 6.2b): Write a new opening line -------------------
-        # Make it match the job you gave it above. This is the only line the
-        # agent says before it knows anything about the user, so it is doing
-        # all the work of setting expectations.
         greeting="Hello! I'm a Deepgram voice agent. What would you like to talk about?",
-        # -------------------------------------------------------------------
     ),
 )
 
@@ -180,29 +226,19 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         # way, on the right of the activity line above the transcript.
         pass
     elif message_type == "Error":
+        # Where a refused Bedrock configuration lands. Unlike a misspelled voice
+        # -- which warns and falls back -- there is nothing to fall back to when
+        # the brain is rejected, so this one is fatal.
         code = getattr(message, "code", "unknown")
         description = getattr(message, "description", "unknown error")
         print(f">> Agent error: {code} - {description}")
-    # ---- TODO (Step 6.4): Surface warnings --------------------------------
-    # Add a branch for "Warning", printing .code and .description the same way
-    # the Error branch above does:
-    #
-    #   elif message_type == "Warning":
-    #       code = getattr(message, "code", "unknown")
-    #       description = getattr(message, "description", "unknown warning")
-    #       print(f">> Agent warning: {code} - {description}")
-    #
-    # Warnings are where rejected settings show up. A misspelled voice or a
-    # threshold outside its valid range arrives here rather than failing the
-    # handshake -- so without this branch, a bad setting is silently ignored
-    # and you are left wondering why nothing changed.
-    #
-    # The browser shows warnings whether or not you write this branch, in the
-    # box above the transcript. That is the bridge mirroring events to the
-    # page, not this file -- and it is exactly the sort of thing you would not
-    # get for free in your own agent, which is why the branch is still worth
-    # writing.
-    # -----------------------------------------------------------------------
+    elif message_type == "Warning":
+        # Non-fatal, and the place a rejected setting shows up -- a bad voice
+        # name or a threshold outside its valid range warns here rather than
+        # failing the handshake.
+        code = getattr(message, "code", "unknown")
+        description = getattr(message, "description", "unknown warning")
+        print(f">> Agent warning: {code} - {description}")
     else:
         print(f">> {message_type}")
 
@@ -222,6 +258,8 @@ def on_media(agent: AgentHandle, audio: bytes) -> None:
 
 def main() -> None:
     """Serve the page and run the agent until interrupted."""
+    which = "AWS Bedrock" if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY else "OpenAI (no AWS credentials in .env)"
+    print(f">> Thinking with: {which}")
     bridge.run(settings=SETTINGS, on_message=on_message, on_media=on_media)
 
 

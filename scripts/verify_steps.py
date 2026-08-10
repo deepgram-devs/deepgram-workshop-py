@@ -39,6 +39,12 @@ MARKER = re.compile(r"TODO \(Step (\d+)(?:\.\w+)?\)")
 # is exempt from the growth check against its "predecessor".
 STANDALONE = {"01-setup"}
 
+# Optional detours. They sit in steps/ and are compiled, linted, and required to
+# ship a LAB.md like everything else, but they are not links in the answer-key
+# chain: 07 is 06's answer key, not 06b's. A detour carries its own answer key
+# in its LAB.md, because nothing downstream can be it.
+OPTIONAL = {"06b-bring-your-own-llm"}
+
 
 def step_dirs() -> list[Path]:
     """Return every step folder that ships runnable code, in workshop order.
@@ -234,14 +240,19 @@ def main() -> None:
 
     print(f"Checking {len(steps)} steps: {', '.join(s.name for s in steps)}\n")
 
+    # The two pairwise checks run over the main line only. Leaving a detour in
+    # would pair it with its neighbours and assert relationships that were never
+    # meant to hold.
+    chain = [step for step in steps if step.name not in OPTIONAL]
+
     failures = []
     for label, check in (
         ("compiles", lambda: check_compiles(steps)),
-        ("no leaked TODO markers", lambda: check_marker_leakage(steps)),
+        ("no leaked TODO markers", lambda: check_marker_leakage(chain)),
         ("docs present", lambda: check_docs(steps)),
         ("doc links resolve", lambda: check_lab_links(steps)),
         ("setup checks the right models", lambda: check_setup_models(steps)),
-        ("steps grow", lambda: check_growth(steps)),
+        ("steps grow", lambda: check_growth(chain)),
         ("ruff", check_lint),
     ):
         print(f"- {label}")

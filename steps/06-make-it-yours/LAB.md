@@ -50,7 +50,7 @@ Misspell one deliberately first and run it. Once you've finished TODO 6.4 you'll
 
 **TODO 6.3 — Try a different brain.** `gpt-4o-mini` is fast and cheap, which matters more than raw capability when someone is waiting to hear a reply. Switch to `gpt-4o` and watch the latency readout on the right of the browser's activity line — you're paying for that capability in a currency your users feel directly. Step 8 is where that number becomes the whole point.
 
-`temperature` controls variability: `0.0` for an agent that must say the same thing every time, `1.0` and up for a chatty one. Other providers work here too — Anthropic, Google, Groq, AWS Bedrock — via the matching `ThinkSettingsV1Provider_*` class.
+`temperature` controls variability: `0.0` for an agent that must say the same thing every time, `1.0` and up for a chatty one. Other providers work here too — Anthropic, Google, Groq, AWS Bedrock — via the matching `ThinkSettingsV1Provider_*` class. Note that you're switching models without an OpenAI account: Deepgram brokers that call. It doesn't broker all of them, and [Step 6b](../06b-bring-your-own-llm/LAB.md) is the optional detour into what changes when the model runs in your account instead.
 
 **TODO 6.4 — Surface warnings.** Add a `Warning` branch mirroring the `Error` branch above it.
 

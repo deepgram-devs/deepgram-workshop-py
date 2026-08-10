@@ -36,6 +36,8 @@ The single biggest predictor of whether this workshop goes well is how many peop
 >
 > If the check prints anything other than all-OK, reply to this email and we'll sort it out before the day.
 
+**Only if you're running the optional Step 6b**, add a fifth item asking people to enable Bedrock model access for `us.anthropic.claude-3-5-haiku-20241022-v1:0` in one region at [Bedrock → Model access](https://console.aws.amazon.com/bedrock/home#/modelaccess), and to have an access key ready. Send that version *earlier* than a week out — access is per model and per region, and the approval isn't always instant. Leave it out of the default email; it's noise for a room that isn't doing the step.
+
 ## Running it in another region
 
 Deepgram's global endpoint is the default and is what the pre-event email above assumes. If the room needs audio processed inside the EU or Australia, set one line in `.env` and hand out the repository as usual:
@@ -115,6 +117,10 @@ Times assume a 3-hour slot with one break. The **⏸** rows are the sync points 
 | 3:05 | **8 — Optimization** | EOT thresholds, latency | Pace-recovery step. Stragglers catch up here, and it sheds time cleanly |
 | 3:20 | **Wrap** | `steps/99-final/README.md`, Q&A | Point at Discord and the docs |
 
+**Step 6b is not in the run of show, and that's deliberate.** It moves the LLM to Amazon Bedrock in the attendee's own AWS account, which needs Bedrock model access granted per model *and* per region — a day or two of calendar time for a fresh account, not a day or two of work. Mention it in one sentence when you finish Step 6, as a take-home, and move on.
+
+Run it live only if you know the room already has AWS — an enterprise team, an AWS-hosted event. In that case it slots in after Step 6 and costs about 15 minutes, and you should say so in the pre-event email so people arrive with model access approved. Everything it teaches (`think.endpoint`, brokered vs bring-your-own providers) is in its `LAB.md`, so it reads fine unattended.
+
 **Running long?** Cut Step 8 and Step 7's exercises — both work fine as take-home, and Step 8 is deliberately last so it can go. Never cut Step 5; it's the step people remember.
 
 **Running short?** Step 8's "Going further" (`eager_eot_threshold`) and Step 7's second function absorb time well.
@@ -132,6 +138,8 @@ Times assume a 3-hour slot with one break. The **⏸** rows are the sync points 
 **5. A truncated API key.** Copy-paste drops characters or adds a space. Step 1 makes a real authenticated call rather than checking the string is non-empty, so this surfaces immediately with `Deepgram rejected the key`.
 
 **And one that is not an environment failure at all:** `The agent refused these settings`. The machine is fine — a model isn't available where that person is connecting. Step 1 prints which. Same fix for the whole room, since they share a `.env` layout: `DEEPGRAM_REGION=global`, or change the named model everywhere.
+
+**And a sixth, only if you're running Step 6b: Bedrock model access.** Not on the main line, but by far the longest to fix if it comes up, because you can't fix it in the room. Access is granted per model *and* per region, and some families (Anthropic's among them) need a one-time use case form that isn't instant. Two cheaper mistakes shadow it and are worth ruling out first: a region mismatch between the credentials and the endpoint URL, and an IAM user holding `bedrock:InvokeModel` but not `bedrock:InvokeModelWithResponseStream` — the agent streams, so the non-streaming permission alone isn't enough. Anyone arriving from the Pipecat edition will also reach for `AWS_BEARER_TOKEN_BEDROCK`, which does nothing here.
 
 ## Managing pace spread
 
@@ -159,6 +167,8 @@ The `LAB.md` files pose these; here are the answers, for when you ask the room.
 
 **Step 6** — Tell it that it's speaking (no markdown, bullets, or emoji), and tell it to be brief.
 
+**Step 6b** — Deepgram brokers OpenAI, so a model name is the whole configuration. It doesn't broker Bedrock: it makes the call *as you*, which needs credentials to make it with (`provider.credentials`) and an address to make it to (`think.endpoint`).
+
 **Step 7** — Setting `endpoint` moves execution to Deepgram; omitting it keeps the function client-side.
 
 **Step 8** — Raise `eot_threshold`. It demands more confidence before Flux calls the turn over.
@@ -173,6 +183,7 @@ Worth turning into QR codes on a slide — attendees on a conference floor won't
 | Voice Agent docs | https://developers.deepgram.com/docs/voice-agent |
 | Flux docs | https://developers.deepgram.com/docs/flux |
 | Voice catalogue | https://developers.deepgram.com/docs/tts-models |
+| Bedrock model access (Step 6b only) | https://console.aws.amazon.com/bedrock/home#/modelaccess |
 | Discord | https://discord.gg/xWRaCDBtW4 |
 | GitHub Discussions | https://github.com/orgs/deepgram/discussions |
 

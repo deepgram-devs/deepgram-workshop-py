@@ -75,11 +75,14 @@ Each folder holds the finished state of the step before it. Open `LAB.md` for in
 | [4 — Talk to the agent](steps/04-talk-to-the-agent/LAB.md) | Microphone input — a real conversation | `uv run steps/04-talk-to-the-agent/main.py` | 30 min |
 | [5 — Barge-in](steps/05-barge-in/LAB.md) | Interrupting the agent mid-sentence | `uv run steps/05-barge-in/main.py` | 25 min |
 | [6 — Make it yours](steps/06-make-it-yours/LAB.md) | Prompt, persona, voice, model | `uv run steps/06-make-it-yours/main.py` | 20 min |
+| [6b — Bring your own LLM](steps/06b-bring-your-own-llm/LAB.md) *(optional)* | The brain on Amazon Bedrock, in your AWS account | `uv run steps/06b-bring-your-own-llm/main.py` | 15 min |
 | [7 — Function calling](steps/07-function-calling/LAB.md) | The agent runs your Python | `uv run steps/07-function-calling/main.py` | 35 min |
 | [8 — Optimization](steps/08-optimize/LAB.md) | End-of-turn thresholds and latency | `uv run steps/08-optimize/main.py` | 20 min |
 | [Finished](steps/99-final/README.md) | The complete reference implementation | `uv run steps/99-final/main.py` | — |
 
 Running behind? Steps 1–5 are the core — finish those and you have a working voice agent. Step 8 is dials rather than code and makes the natural take-home. And because every folder is complete, skipping ahead costs you the typing, not the workshop.
+
+Step 6b is a detour, not a link in the chain: it's the only step that needs a credential beyond your Deepgram key — AWS access with Bedrock model access granted, which usually takes longer to obtain than the step takes to do. Skip it and Step 7 continues from Step 6 exactly as it would have.
 
 Each lab has **Check yourself** questions to test your understanding as you go, and **⏸ Pause** markers where a live workshop regroups.
 
