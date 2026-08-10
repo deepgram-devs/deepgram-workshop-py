@@ -64,13 +64,21 @@ Then enable model access for `zai.glm-4.7-flash` in that region, at [Bedrock →
 
 **If you already did the Pipecat edition of this workshop, note what does *not* carry over:** `AWS_BEARER_TOKEN_BEDROCK` is a botocore convenience, and there's no botocore here. Deepgram takes an access key and secret, or STS credentials, and nothing else.
 
-**TODO 6b.1: Add the imports.** Three of them, listed in the block at the top of `main.py`.
+Now the code. All three TODOs sit where their code goes, and each carries its own guidance — you shouldn't need to scroll between an instruction and the line it's about.
 
-**TODO 6b.2: Think on Bedrock.** Fill in `think_settings()`. Return the Bedrock provider *and* the endpoint when `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are both set, and the existing OpenAI settings when they aren't.
+**TODO 6b.1: Uncomment the imports.** Three of them, already sited at their alphabetical places in the import block (`6b.1a` through `6b.1c`).
+
+**TODO 6b.2: Guard, then build the credentials.** In `think_settings()`, above the fallback `return`. Guard on `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, then build the credentials as a plain dict.
 
 Keep the guard. It's what lets the person next to you, who never got model access approved, run your file.
 
+And build the credentials as a dict rather than passing keyword arguments, so `session_token` can be *absent* for long-lived IAM keys. The SDK serializes any field you pass explicitly, so `session_token=None` would put a literal `null` on the wire next to `type="iam"`.
+
+**TODO 6b.3: Return the Bedrock settings.** Still inside the guard: `provider`, `endpoint`, and `prompt`. Bedrock needs the first two together — miss either and the handshake fails — and the region appears in both.
+
 Note what `model` is doing here: Bedrock model IDs are passed through to AWS untouched. The SDK's type hints list two Claude 3.5 IDs and then accept any string, so nothing catches a typo locally. A wrong model ID comes back from AWS at handshake time, not from your editor.
+
+Once Bedrock answers, set `AWS_BEDROCK_MODEL` in `.env` to another model you enabled and listen for what a different brain does to latency and voice.
 
 ## Verify
 
@@ -96,7 +104,9 @@ Now check the bill you just moved: the request shows up in **AWS → Bedrock →
 
 **Credentials rejected.** Confirm the IAM user can actually invoke Bedrock. `bedrock:InvokeModelWithResponseStream` is the permission the agent needs; `bedrock:InvokeModel` alone is not enough, because the agent streams.
 
-**It says `Thinking with: OpenAI` and you're sure the keys are set.** `.env` is read by `load_dotenv()` at import. A key set only in your shell for a previous command won't be there. Check for a stray space after the `=`.
+**`Thinking with: OpenAI (AWS credentials are in .env, but think_settings() is not using them yet)`.** Your keys are fine; the code isn't wired up. That line reports what `think_settings()` actually returned rather than what's in your environment, so it says this until TODO 6b.2 and 6b.3 are both done.
+
+**It says `Thinking with: OpenAI (no AWS credentials in .env)` and you're sure the keys are set.** `.env` is read by `load_dotenv()` at import. A key set only in your shell for a previous command won't be there. Check for a stray space after the `=`.
 
 Here's the finished `think_settings()`, since there's no next folder to check against. This step is a detour, and Step 7 picks up from Step 6:
 

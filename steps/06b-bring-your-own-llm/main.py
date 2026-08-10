@@ -11,24 +11,14 @@ usually sort out in the five minutes this step takes.
 
 Skipping it costs you nothing. Step 7 continues from Step 6 either way, and this
 file falls back to OpenAI when no AWS credentials are present -- so it runs
-whether or not you finish it.
+whether or not you have Bedrock access.
 
-Look for the "TODO (Step 6b.x)" blocks below.
+Part of this step happens outside the file: AWS credentials in .env, and model
+access in the Bedrock console. Do that first, then work through the
+"TODO (Step 6b.x)" blocks below in order -- each one sits where its code goes.
 
 Run it with:  uv run steps/06b-bring-your-own-llm/main.py
 """
-
-# ---- TODO (Step 6b.1): Imports --------------------------------------------
-# You need three more imports for this step. Add them to the third-party block
-# below, keeping it alphabetical:
-#
-#   from deepgram.types.aws_bedrock_think_provider_credentials import (
-#       AwsBedrockThinkProviderCredentials,
-#   )
-#   from deepgram.types.think_settings_v1endpoint import ThinkSettingsV1Endpoint
-#   ThinkSettingsV1Provider_AwsBedrock  -> alongside ThinkSettingsV1Provider_OpenAi
-#                                          on the think_settings_v1provider line
-# ---------------------------------------------------------------------------
 
 import os
 
@@ -41,9 +31,21 @@ from deepgram.agent.v1.types import (
     AgentV1SettingsAudioInput,
     AgentV1SettingsAudioOutput,
 )
+
+# ---- TODO (Step 6b.1a): Uncomment -- the credentials the provider carries.
+# from deepgram.types.aws_bedrock_think_provider_credentials import (
+#     AwsBedrockThinkProviderCredentials,
+# )
 from deepgram.types.speak_settings_v1 import SpeakSettingsV1
 from deepgram.types.speak_settings_v1provider import SpeakSettingsV1Provider_Deepgram
 from deepgram.types.think_settings_v1 import ThinkSettingsV1
+
+# ---- TODO (Step 6b.1b): Uncomment -- think.endpoint, the URL Deepgram calls.
+# from deepgram.types.think_settings_v1endpoint import ThinkSettingsV1Endpoint
+
+# ---- TODO (Step 6b.1c): Add ThinkSettingsV1Provider_AwsBedrock to the import
+# below, alongside the OpenAI provider the fallback uses. They come from the
+# same module, so it becomes a parenthesized import over several lines.
 from deepgram.types.think_settings_v1provider import ThinkSettingsV1Provider_OpenAi
 from dotenv import load_dotenv
 
@@ -65,6 +67,13 @@ EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this 
 # Everything Bedrock needs comes from .env, because none of it belongs in a file
 # you might commit. See .env.example -- the whole block is optional and only
 # this step reads it.
+#
+# Copy that block across, fill in a region, an access key and a secret, then
+# enable model access for BEDROCK_MODEL below *in that same region*, at
+# https://console.aws.amazon.com/bedrock/home#/modelaccess -- none of the code
+# you write in this file can work before both of those are done. The line the
+# file prints before the browser opens tells you which of the two branches in
+# think_settings() it took.
 AWS_REGION = os.getenv("AWS_REGION", "us-east-2")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
@@ -73,10 +82,15 @@ AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN", "")  # STS only. Leave it uns
 # Bedrock model IDs are passed through to Bedrock untouched, so this is a plain
 # string with no validation behind it -- a typo comes back from AWS, not from
 # the SDK. The "us." prefix is a cross-region inference profile and has to match
-# the region below.
+# AWS_REGION above.
 #
 # zai.glm-4.7-flash is the model this workshop is built and tested against, and
 # it needs no Bedrock use case form -- the shortest path to a working step.
+#
+# Once Bedrock answers at all, try a model you enabled yourself and listen for
+# what it does to latency and voice. Set AWS_BEDROCK_MODEL in .env rather than
+# editing this line, so the tested default survives for whoever runs the file
+# next.
 BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL") or "zai.glm-4.7-flash"
 
 # One prompt, used whichever provider ends up answering. Keeping it out of the
@@ -92,50 +106,64 @@ def think_settings() -> ThinkSettingsV1:
 
     Falling back to OpenAI rather than failing is deliberate. This step is
     optional, and the file has to keep running for someone who never got Bedrock
-    access -- including someone who is halfway through the TODO below.
+    access -- including someone halfway through the TODOs below.
 
     Returns:
         The think settings the agent is configured with.
     """
-    # ---- TODO (Step 6b.2): Think on Bedrock -------------------------------
-    # Return Bedrock settings when AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-    # are both set. Guarding on them is what keeps this file runnable without
-    # AWS -- do not drop the guard.
+    # ---- TODO (Step 6b.2): Guard, then build the credentials --------------
+    # Everything Bedrock-specific goes in this space, above the fallback return.
+    # Open with the guard, and keep it whatever else you change -- it is what
+    # lets the person next to you, who never got model access approved, run your
+    # file:
     #
-    # Build the credentials first. session_token is STS-only, and it has to be
-    # *absent* rather than None for long-lived IAM keys -- the SDK serializes
-    # any field you pass explicitly, so session_token=None would put a literal
-    # null on the wire alongside type="iam":
+    #   if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
     #
-    #   credentials = {
-    #       "type": "sts" if AWS_SESSION_TOKEN else "iam",
-    #       "region": AWS_REGION,
-    #       "access_key_id": AWS_ACCESS_KEY_ID,
-    #       "secret_access_key": AWS_SECRET_ACCESS_KEY,
-    #   }
-    #   if AWS_SESSION_TOKEN:
-    #       credentials["session_token"] = AWS_SESSION_TOKEN
+    # Inside it, build the credentials as a plain dict: a "type" of "sts" when
+    # AWS_SESSION_TOKEN is set and "iam" when it is not, plus "region",
+    # "access_key_id" and "secret_access_key" from the constants above. Then add
+    # "session_token" under an if, only when there is one.
     #
-    # Then two halves, and Bedrock needs both. Miss either and the handshake
-    # fails:
-    #
-    #   provider=ThinkSettingsV1Provider_AwsBedrock(
-    #       type="aws_bedrock",
-    #       model=BEDROCK_MODEL,
-    #       temperature=0.7,
-    #       credentials=AwsBedrockThinkProviderCredentials(**credentials),
-    #   ),
-    #   endpoint=ThinkSettingsV1Endpoint(
-    #       url=f"https://bedrock-runtime.{AWS_REGION}.amazonaws.com/",
-    #   ),
-    #
-    # Keep prompt=PROMPT on it, or your agent loses the instruction that stops
-    # it reading markdown aloud.
-    #
-    # The endpoint's region has to match the credentials' region. They are
-    # written down twice here on purpose -- that mismatch is the second most
-    # common way this step fails, after model access.
+    # The dict is not stylistic. session_token has to be *absent* rather than
+    # None for long-lived IAM keys: the SDK serializes any field you pass
+    # explicitly, so session_token=None would put a literal null on the wire
+    # next to type="iam".
     # -----------------------------------------------------------------------
+
+    # ---- TODO (Step 6b.3): Return the Bedrock settings --------------------
+    # Still inside the guard, return a ThinkSettingsV1 carrying three things.
+    # provider and endpoint are two halves of one setting and Bedrock needs both
+    # -- miss either and the handshake fails.
+    #
+    #   provider=ThinkSettingsV1Provider_AwsBedrock(...)
+    #     type="aws_bedrock", model=BEDROCK_MODEL, temperature=0.7, and
+    #     credentials=AwsBedrockThinkProviderCredentials(**credentials).
+    #     Those credentials travel in the Settings message, over the WebSocket,
+    #     to Deepgram -- that is what "Deepgram calls Bedrock as you" means, and
+    #     why the IAM user wants scoping to
+    #     bedrock:InvokeModelWithResponseStream on the one model ARN you use.
+    #
+    #   endpoint=ThinkSettingsV1Endpoint(url=...)
+    #     Bedrock's runtime URL: https://bedrock-runtime.{region}.amazonaws.com/
+    #     Interpolate AWS_REGION rather than typing a region in. It has to match
+    #     the region in the credentials, and that mismatch is the second most
+    #     common way this step fails, after model access.
+    #
+    #     endpoint is the setting worth remembering after today, because it is
+    #     not Bedrock-specific: point it at anything speaking the OpenAI Chat
+    #     Completions format -- a self-hosted model, a gateway in front of your
+    #     own inference, a router -- and the agent talks to it.
+    #
+    #   prompt=PROMPT
+    #     The same prompt the fallback uses, so the only thing that changes
+    #     between the branches is who runs the model. Drop it and the agent
+    #     loses the instruction that stops it reading markdown aloud.
+    # -----------------------------------------------------------------------
+
+    # Reached when there are no AWS credentials: Step 6's agent untouched, a
+    # brokered provider where naming a model is the whole configuration because
+    # the account and the endpoint are Deepgram's problem, not yours. It is the
+    # fallback, not a placeholder -- leave it where it is.
     return ThinkSettingsV1(
         provider=ThinkSettingsV1Provider_OpenAi(
             type="open_ai",
@@ -261,7 +289,15 @@ def on_media(agent: AgentHandle, audio: bytes) -> None:
 
 def main() -> None:
     """Serve the page and run the agent until interrupted."""
-    which = "AWS Bedrock" if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY else "OpenAI (no AWS credentials in .env)"
+    # Ask the same function the settings did, rather than reading the
+    # environment. The two disagree while the TODOs are unfinished, and that gap
+    # is the most useful thing this line can tell you.
+    if getattr(think_settings().provider, "type", "") == "aws_bedrock":
+        which = "AWS Bedrock"
+    elif AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        which = "OpenAI (AWS credentials are in .env, but think_settings() is not using them yet)"
+    else:
+        which = "OpenAI (no AWS credentials in .env)"
     print(f">> Thinking with: {which}")
     bridge.run(settings=SETTINGS, on_message=on_message, on_media=on_media)
 
