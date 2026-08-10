@@ -1,6 +1,6 @@
 # Step 1: Setup
 
-**Goal:** Prove this machine can reach Deepgram and move audio in both directions, before any of it matters.
+**Goal:** Prove this machine can reach Deepgram and move audio in both directions, before getting too deep.
 
 **You'll learn**
 
@@ -11,11 +11,9 @@
 
 ## Why this step exists
 
-Voice work fails in a specific, predictable order: the key is wrong, the browser never got microphone permission, or you are serving the page from somewhere the browser refuses to trust with a microphone at all. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
+Voice work fails in a specific, predictable order: the api key is wrong, the browser never got microphone permission, or you are serving the page from somewhere the browser refuses to trust with a microphone at all. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
 
-This step also triggers your browser's microphone permission prompt.
-
-The audio half of this check runs **in a browser page**, because that is where the rest of the workshop's audio runs. Checking it anywhere else would be checking something other than what you are about to use.
+This step also triggers your browser's microphone permission prompt. The audio half of this check runs **in a browser page**, because that is where the rest of the workshop's audio runs. Be sure to approve the browser's request to access your microphone. If you need to change audio devices at any point, you may need to repeat this process by clicking the lock icon from the browser's address bar.
 
 ## Do this
 
@@ -39,12 +37,12 @@ That key is the only credential you need. The agent you build uses OpenAI's `gpt
 
 Deepgram applies **$200 in credit** to new accounts automatically. This workshop costs well under a dollar, so you'll have plenty left to keep building afterward.
 
-`.env` also holds `DEEPGRAM_REGION`, which decides where Deepgram processes your audio: `global` by default, or `eu` or `au` for the endpoints that keep it inside those geographies. Leave it blank unless your instructor says otherwise. It's worth knowing it exists: your key works in every region, no code in this workshop names one, and moving between them is this single line.
+`.env` also holds `DEEPGRAM_REGION`, which decides where Deepgram processes your audio: `global` by default, or `eu` or `au` for the endpoints that keep it inside those geographies. Leave it blank unless your instructor says otherwise. Your key works in every region, no code in this workshop names one, and moving between them is this single line.
 
 > **Check yourself:** How many API keys does this workshop need, and why doesn't the LLM require its own?
 
 > **⏸ Pause: check in with the instructor**
-> Wait until everyone has a key in `.env` before moving on. This is the step where people get stuck, and it's much cheaper to fix now than in the middle of Step 2.
+> Wait until everyone has a key in `.env` before moving on. This is the step where people get stuck, and it's much easier to fix now than in the middle of Step 2.
 
 **3. Run the check.**
 
@@ -54,7 +52,7 @@ uv run steps/01-setup/main.py
 
 It checks your key in the terminal, briefly starts the agent you're about to build, then opens a page. Press **Run the audio checks**, allow the microphone when your browser asks, speak when it tells you to, and listen for the tone. Ctrl+C in the terminal when you're done.
 
-That agent line is worth a second look. The check opens the same WebSocket Step 2 opens, with the same three models, and waits for the server to accept them, then hangs up without sending a byte of audio. A key that authenticates and a model that's actually served where you're connecting are two different questions, and this is the one that answers the second.
+The check verifies the models are connecting over WebSockets without needing to send audio bytes.
 
 ## Verify
 
@@ -77,7 +75,7 @@ OK   Microphone          Heard you (peak 0.34).
 OK   Speaker             Played a tone -- you should have heard it
 ```
 
-Every row reads `OK`, and you heard the tone. Anything else, work through the fixes below.
+Every should row read `OK`, and you heard a tone through your speakers. If there are any problems, start troubleshooting using steps below below.
 
 ## Stuck?
 
