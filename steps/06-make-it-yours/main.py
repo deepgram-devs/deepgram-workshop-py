@@ -7,9 +7,10 @@ Everything so far has been plumbing. This step is where the agent becomes
 *yours* -- its job, its personality, its voice, its opening line. There is less
 code here than in any other step and more to play with.
 
-Look for the "TODO (Step 6.x)" blocks below. Inside them, lines marked "#:" are
-the code -- strip that prefix to activate them, and the indentation left behind
-is already correct. Every other line in the block is explanation.
+Look for the "TODO (Step 6.x)" blocks below. Inside them, "#:" marks the
+instructions and everything else is code, commented out at the indentation it
+belongs at: select those lines and press Cmd+/ (Ctrl+/ on Windows and Linux) to
+uncomment them where they sit.
 
 Run it with:  uv run steps/06-make-it-yours/main.py
 """
@@ -64,20 +65,20 @@ SETTINGS = AgentV1Settings(
             ),
         ),
         think=ThinkSettingsV1(
-            # ---- TODO (Step 6.3): Try a different brain -------------------
-            # gpt-4o-mini is fast and cheap, which matters more than raw
-            # capability when someone is waiting to hear a reply. Try
-            # "gpt-4o" and listen for the extra latency before deciding it is
-            # worth it -- the readout on the right of the browser's activity
-            # line puts a number on it, and Step 8 is where that number becomes
-            # the whole point. temperature controls variability: 0.0 for an agent
-            # that must say the same thing every time, 1.0+ for a chatty one.
-            #
-            # Other providers are available here too (Anthropic, Google, Groq,
-            # AWS Bedrock) via the matching ThinkSettingsV1Provider_* class.
-            # Deepgram brokers some of them and not others -- Step 6b is the
-            # optional detour into what changes when it does not.
-            # ---------------------------------------------------------------
+            #: ---- TODO (Step 6.3): Try a different brain ------------------
+            #: gpt-4o-mini is fast and cheap, which matters more than raw
+            #: capability when someone is waiting to hear a reply. Try
+            #: "gpt-4o" and listen for the extra latency before deciding it is
+            #: worth it -- the readout on the right of the browser's activity
+            #: line puts a number on it, and Step 8 is where that number becomes
+            #: the whole point. temperature controls variability: 0.0 for an agent
+            #: that must say the same thing every time, 1.0+ for a chatty one.
+            #:
+            #: Other providers are available here too (Anthropic, Google, Groq,
+            #: AWS Bedrock) via the matching ThinkSettingsV1Provider_* class.
+            #: Deepgram brokers some of them and not others -- Step 6b is the
+            #: optional detour into what changes when it does not.
+            #: --------------------------------------------------------------
             provider=ThinkSettingsV1Provider_OpenAi(
                 type="open_ai",
                 model="gpt-4o-mini",
@@ -87,22 +88,22 @@ SETTINGS = AgentV1Settings(
             # LLM. It is the agent's standing instructions -- personality, job,
             # and boundaries. Keep it short: every token here is re-sent on
             # every turn, and long prompts slow the first reply.
-            # ---- TODO (Step 6.1): Give your agent a job -------------------
-            # Replace the prompt below. Two rules that matter more than they
-            # look:
-            #
-            #   1. Tell it that it is *speaking*. LLMs default to writing.
-            #      Without this you get bullet points and asterisks read
-            #      aloud, and it is jarring the first time you hear it:
-            #        "You are speaking out loud, so never use markdown,
-            #         bullet points, or emoji."
-            #
-            #   2. Tell it to be brief. Text-chat length answers feel
-            #      interminable in a conversation.
-            #
-            # Then give it an actual job -- a barista taking an order, a
-            # support agent for a product you know, a dungeon master. Specific
-            # beats generic.
+            #: ---- TODO (Step 6.1): Give your agent a job ------------------
+            #: Replace the prompt below. Two rules that matter more than they
+            #: look:
+            #:
+            #:   1. Tell it that it is *speaking*. LLMs default to writing.
+            #:      Without this you get bullet points and asterisks read
+            #:      aloud, and it is jarring the first time you hear it:
+            #:        "You are speaking out loud, so never use markdown,
+            #:         bullet points, or emoji."
+            #:
+            #:   2. Tell it to be brief. Text-chat length answers feel
+            #:      interminable in a conversation.
+            #:
+            #: Then give it an actual job -- a barista taking an order, a
+            #: support agent for a product you know, a dungeon master. Specific
+            #: beats generic.
             prompt="You are a helpful AI assistant. Keep your responses brief.",
             # ---------------------------------------------------------------
         ),
@@ -112,26 +113,26 @@ SETTINGS = AgentV1Settings(
         speak=SpeakSettingsV1(
             provider=SpeakSettingsV1Provider_Deepgram(
                 type="deepgram",
-                # ---- TODO (Step 6.2): Pick a voice ------------------------
-                # Swap flux-alexis-en for another Flux voice. The full list is
-                # at https://developers.deepgram.com/docs/tts-models
-                #
-                # Deliberately misspell one first and run it. You will get a
-                # ">> Agent warning" once you finish TODO 6.4 -- a rejected
-                # voice is non-fatal, and the agent falls back rather than
-                # failing the handshake. Knowing that saves you an hour some
-                # day when an agent sounds wrong and nothing has errored.
-                # -----------------------------------------------------------
+                #: ---- TODO (Step 6.2): Pick a voice -----------------------
+                #: Swap flux-alexis-en for another Flux voice. The full list is
+                #: at https://developers.deepgram.com/docs/tts-models
+                #:
+                #: Deliberately misspell one first and run it. You will get a
+                #: ">> Agent warning" once you finish TODO 6.4 -- a rejected
+                #: voice is non-fatal, and the agent falls back rather than
+                #: failing the handshake. Knowing that saves you an hour some
+                #: day when an agent sounds wrong and nothing has errored.
+                #: ----------------------------------------------------------
                 model="flux-alexis-en",
             ),
         ),
         # The agent's first utterance, spoken as soon as settings are applied.
         # It is added to the conversation history, so the LLM knows it already
         # said this and will not repeat itself on the first real turn.
-        # ---- TODO (Step 6.2b): Write a new opening line -------------------
-        # Make it match the job you gave it above. This is the only line the
-        # agent says before it knows anything about the user, so it is doing
-        # all the work of setting expectations.
+        #: ---- TODO (Step 6.2b): Write a new opening line ------------------
+        #: Make it match the job you gave it above. This is the only line the
+        #: agent says before it knows anything about the user, so it is doing
+        #: all the work of setting expectations.
         greeting="Hello! I'm a Deepgram voice agent. What would you like to talk about?",
         # -------------------------------------------------------------------
     ),
@@ -185,26 +186,26 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         code = getattr(message, "code", "unknown")
         description = getattr(message, "description", "unknown error")
         print(f">> Agent error: {code} - {description}")
-    # ---- TODO (Step 6.4): Surface warnings --------------------------------
-    # Add a branch for "Warning", printing .code and .description the same way
-    # the Error branch above does:
-    #
-    #: elif message_type == "Warning":
-    #:     code = getattr(message, "code", "unknown")
-    #:     description = getattr(message, "description", "unknown warning")
-    #:     print(f">> Agent warning: {code} - {description}")
-    #
-    # Warnings are where rejected settings show up. A misspelled voice or a
-    # threshold outside its valid range arrives here rather than failing the
-    # handshake -- so without this branch, a bad setting is silently ignored
-    # and you are left wondering why nothing changed.
-    #
-    # The browser shows warnings whether or not you write this branch, in the
-    # box above the transcript. That is the bridge mirroring events to the
-    # page, not this file -- and it is exactly the sort of thing you would not
-    # get for free in your own agent, which is why the branch is still worth
-    # writing.
-    # -----------------------------------------------------------------------
+    #: ---- TODO (Step 6.4): Surface warnings -------------------------------
+    #: Add a branch for "Warning", printing .code and .description the same way
+    #: the Error branch above does:
+    #:
+    # elif message_type == "Warning":
+    #     code = getattr(message, "code", "unknown")
+    #     description = getattr(message, "description", "unknown warning")
+    #     print(f">> Agent warning: {code} - {description}")
+    #:
+    #: Warnings are where rejected settings show up. A misspelled voice or a
+    #: threshold outside its valid range arrives here rather than failing the
+    #: handshake -- so without this branch, a bad setting is silently ignored
+    #: and you are left wondering why nothing changed.
+    #:
+    #: The browser shows warnings whether or not you write this branch, in the
+    #: box above the transcript. That is the bridge mirroring events to the
+    #: page, not this file -- and it is exactly the sort of thing you would not
+    #: get for free in your own agent, which is why the branch is still worth
+    #: writing.
+    #: ----------------------------------------------------------------------
     else:
         print(f">> {message_type}")
 

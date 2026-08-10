@@ -11,9 +11,10 @@ The microphone itself lives in the browser, and it has been open since you
 pressed Connect -- that is what the level meter on the page has been showing.
 What is missing is the instruction to do anything with it.
 
-Look for the "TODO (Step 4.x)" blocks below. Inside them, lines marked "#:" are
-the code -- strip that prefix to activate them, and the indentation left behind
-is already correct. Every other line in the block is explanation.
+Look for the "TODO (Step 4.x)" blocks below. Inside them, "#:" marks the
+instructions and everything else is code, commented out at the indentation it
+belongs at: select those lines and press Cmd+/ (Ctrl+/ on Windows and Linux) to
+uncomment them where they sit.
 
 Run it with:  uv run steps/04-talk-to-the-agent/main.py
 """
@@ -121,61 +122,61 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         print(f">> {message_type}")
 
 
-# ---- TODO (Step 4.1): Send the microphone up ------------------------------
-# Write the other half of the conversation. Every 80 ms the browser's capture
-# worklet hands the bridge a chunk of PCM, and the bridge calls this with it:
-#
-#: def on_media(agent: AgentHandle, audio: bytes) -> None:
-#:     """Forward one captured chunk of microphone audio to the agent.
+#: ---- TODO (Step 4.1): Send the microphone up -----------------------------
+#: Write the other half of the conversation. Every 80 ms the browser's capture
+#: worklet hands the bridge a chunk of PCM, and the bridge calls this with it:
 #:
-#:     Args:
-#:         agent: The connected agent.
-#:         audio: One 80 ms chunk of linear16 PCM from the microphone.
-#:     """
-#:     agent.send_media(audio)
+# def on_media(agent: AgentHandle, audio: bytes) -> None:
+#     """Forward one captured chunk of microphone audio to the agent.
 #
-# That is the whole thing, and the shortness is the lesson. Nothing here
-# inspects the audio, measures its volume, trims silence, or decides whether
-# the user is talking. Flux does turn detection inside the model, server-side,
-# so there is no voice activity detection to write -- which is most of what
-# makes a voice agent client hard in the general case. Your job is to keep the
-# pipe full.
-#
-# Nor does anything here block. agent.send_media() hands the chunk to a
-# dedicated sender thread and returns immediately; see AgentHandle in
-# web/session.py for why a blocking send would be a serious problem.
-#
-# Two things the browser is doing for you, which you would otherwise be
-# writing yourself -- see web/static/worklets.js:
-#
-#   * Chunking. The audio hardware delivers 128 frames at a time. The capture
-#     worklet accumulates those into the 1920-frame chunks Flux wants.
-#
-#   * Resampling. Most microphones run at 48 kHz. The browser hands you 24 kHz
-#     because that is what SETTINGS asked for.
-# ---------------------------------------------------------------------------
+#     Args:
+#         agent: The connected agent.
+#         audio: One 80 ms chunk of linear16 PCM from the microphone.
+#     """
+#     agent.send_media(audio)
+#:
+#: That is the whole thing, and the shortness is the lesson. Nothing here
+#: inspects the audio, measures its volume, trims silence, or decides whether
+#: the user is talking. Flux does turn detection inside the model, server-side,
+#: so there is no voice activity detection to write -- which is most of what
+#: makes a voice agent client hard in the general case. Your job is to keep the
+#: pipe full.
+#:
+#: Nor does anything here block. agent.send_media() hands the chunk to a
+#: dedicated sender thread and returns immediately; see AgentHandle in
+#: web/session.py for why a blocking send would be a serious problem.
+#:
+#: Two things the browser is doing for you, which you would otherwise be
+#: writing yourself -- see web/static/worklets.js:
+#:
+#:   * Chunking. The audio hardware delivers 128 frames at a time. The capture
+#:     worklet accumulates those into the 1920-frame chunks Flux wants.
+#:
+#:   * Resampling. Most microphones run at 48 kHz. The browser hands you 24 kHz
+#:     because that is what SETTINGS asked for.
+#: --------------------------------------------------------------------------
 
 
 def main() -> None:
     """Serve the page and run the agent until interrupted."""
-    # ---- TODO (Step 4.2): Open the microphone -----------------------------
-    # Add on_media to the call below:
-    #
-    #: bridge.run(settings=SETTINGS, on_message=on_message, on_media=on_media)
-    #
-    # Passing it is what tells the browser to start capturing. Until now the
-    # bridge has been sending the page a "do not capture" flag along with the
-    # settings handshake -- see _mirror() in web/session.py.
-    #
-    # Note *when* capture starts: only after SettingsApplied arrives. The agent
-    # discards media until the handshake completes, so starting any earlier
-    # throws away your first words. The bridge enforces that ordering; it is
-    # the reason the page waits for a "ready" message rather than sending audio
-    # the moment the socket opens.
-    #
-    # Then talk to it. The agent stops hanging up, because it is finally
-    # receiving the continuous media stream it has been waiting for.
-    # -----------------------------------------------------------------------
+    #: ---- TODO (Step 4.2): Open the microphone ----------------------------
+    #: Add on_media to the call below:
+    #:
+    # bridge.run(settings=SETTINGS, on_message=on_message, on_media=on_media)
+    #:
+    #: Passing it is what tells the browser to start capturing. Until now the
+    #: bridge has been sending the page a "do not capture" flag along with the
+    #: settings handshake -- see _mirror() in web/session.py.
+    #:
+    #: Note *when* capture starts: only after SettingsApplied arrives. The agent
+    #: discards media until the handshake completes, so starting any earlier
+    #: throws away your first words. The bridge enforces that ordering; it is
+    #: the reason the page waits for a "ready" message rather than sending audio
+    #: the moment the socket opens.
+    #:
+    #: Then talk to it. The agent stops hanging up, because it is finally
+    #: receiving the continuous media stream it has been waiting for.
+    #: ----------------------------------------------------------------------
     bridge.run(settings=SETTINGS, on_message=on_message)
 
 

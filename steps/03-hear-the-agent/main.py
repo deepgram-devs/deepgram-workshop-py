@@ -15,9 +15,10 @@ AudioWorklet, out the speaker. That queue is worth looking at --
 web/static/worklets.js, class PlaybackProcessor -- because Step 5 is entirely
 about throwing it away at the right moment.
 
-Look for the "TODO (Step 3.x)" blocks below. Inside them, lines marked "#:" are
-the code -- strip that prefix to activate them, and the indentation left behind
-is already correct. Every other line in the block is explanation.
+Look for the "TODO (Step 3.x)" blocks below. Inside them, "#:" marks the
+instructions and everything else is code, commented out at the indentation it
+belongs at: select those lines and press Cmd+/ (Ctrl+/ on Windows and Linux) to
+uncomment them where they sit.
 
 Run it with:  uv run steps/03-hear-the-agent/main.py
 """
@@ -93,23 +94,23 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
             "type" attribute names the event.
     """
     if isinstance(message, bytes):
-        # ---- TODO (Step 3.1): Play it -----------------------------------
-        # This branch already catches every audio frame -- it just drops them.
-        # Hand them to the player instead:
-        #
-        #: player.send(message)
-        #
-        # One line, and no error handling, which is the point of routing audio
-        # through the bridge: a chunk that cannot be played is the bridge's
-        # problem, not yours. Compare web/audio.py, where LocalPlayer.send
-        # catches PortAudioError and drops the chunk rather than letting an
-        # exception escape into the SDK's receive loop -- that loop wraps
-        # itself in one try/except, so anything thrown here would be reported
-        # as EventType.ERROR and would close the connection.
-        #
-        # Note there is no buffering to write. `player` queues, and the queue
-        # drains at exactly the rate the speaker consumes it.
-        # ------------------------------------------------------------------
+        #: ---- TODO (Step 3.1): Play it ----------------------------------
+        #: This branch already catches every audio frame -- it just drops them.
+        #: Hand them to the player instead:
+        #:
+        # player.send(message)
+        #:
+        #: One line, and no error handling, which is the point of routing audio
+        #: through the bridge: a chunk that cannot be played is the bridge's
+        #: problem, not yours. Compare web/audio.py, where LocalPlayer.send
+        #: catches PortAudioError and drops the chunk rather than letting an
+        #: exception escape into the SDK's receive loop -- that loop wraps
+        #: itself in one try/except, so anything thrown here would be reported
+        #: as EventType.ERROR and would close the connection.
+        #:
+        #: Note there is no buffering to write. `player` queues, and the queue
+        #: drains at exactly the rate the speaker consumes it.
+        #: -----------------------------------------------------------------
         return
 
     message_type = getattr(message, "type", "Unknown")
@@ -120,30 +121,30 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         role = getattr(message, "role", "unknown")
         content = getattr(message, "content", "")
         print(f"[{role}] {content}")
-    # ---- TODO (Step 3.2): Narrate the turn --------------------------------
-    # Right now every event you have not named prints as a bare
-    # ">> SomeEventName" via the fallthrough at the bottom. Give the
-    # interesting ones proper branches so the console reads like a transcript
-    # of what the agent is doing:
-    #
-    #: elif message_type == "AgentThinking":
-    #:     print(">> Agent thinking...")
-    #: elif message_type == "AgentStartedSpeaking":
-    #:     print(">> Agent started speaking")
-    #: elif message_type == "AgentAudioDone":
-    #:     print(">> Agent finished speaking")
-    #: elif message_type == "LatencyReport":
-    #:     pass
-    #
-    # LatencyReport gets an explicit `pass` rather than being left to the
-    # fallthrough: it fires once per turn and would otherwise clutter the
-    # transcript. Step 8 turns it into something useful.
-    #
-    # AgentAudioDone is worth a moment. It means the agent has finished
-    # *sending* audio, not that you have finished hearing it -- there may be a
-    # second of speech still queued in the browser. The two are different
-    # events and Step 5 depends on the difference.
-    # -----------------------------------------------------------------------
+    #: ---- TODO (Step 3.2): Narrate the turn -------------------------------
+    #: Right now every event you have not named prints as a bare
+    #: ">> SomeEventName" via the fallthrough at the bottom. Give the
+    #: interesting ones proper branches so the console reads like a transcript
+    #: of what the agent is doing:
+    #:
+    # elif message_type == "AgentThinking":
+    #     print(">> Agent thinking...")
+    # elif message_type == "AgentStartedSpeaking":
+    #     print(">> Agent started speaking")
+    # elif message_type == "AgentAudioDone":
+    #     print(">> Agent finished speaking")
+    # elif message_type == "LatencyReport":
+    #     pass
+    #:
+    #: LatencyReport gets an explicit `pass` rather than being left to the
+    #: fallthrough: it fires once per turn and would otherwise clutter the
+    #: transcript. Step 8 turns it into something useful.
+    #:
+    #: AgentAudioDone is worth a moment. It means the agent has finished
+    #: *sending* audio, not that you have finished hearing it -- there may be a
+    #: second of speech still queued in the browser. The two are different
+    #: events and Step 5 depends on the difference.
+    #: ----------------------------------------------------------------------
     elif message_type == "Error":
         code = getattr(message, "code", "unknown")
         description = getattr(message, "description", "unknown error")

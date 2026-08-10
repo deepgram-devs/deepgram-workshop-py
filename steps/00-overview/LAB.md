@@ -72,7 +72,7 @@ That means two useful things. If you fall behind, skip ahead and keep going. And
 
 Work the `TODO (Step N.x)` blocks in `main.py`, in order. `LAB.md` explains why each one matters.
 
-Inside a block, lines marked `#:` are the code — strip that prefix to activate them, and the indentation left behind is already correct. Every other line is explanation.
+Inside a block, `#:` marks the instructions. Everything else is code, commented out at the indentation it belongs at — select those lines and press `Cmd+/` (`Ctrl+/` on Windows and Linux) to uncomment them where they sit.
 
 > **Check yourself** — You're stuck halfway through Step 5. Where do you look for the working version?
 

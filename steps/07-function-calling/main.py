@@ -7,29 +7,29 @@ function in the agent's settings, handle the FunctionCallRequest the agent
 sends when the LLM decides to use it, and send the result back.
 
 Look for the "TODO (Step 7.x)" blocks below and work through them in order.
-Inside them, lines marked "#:" are the code -- strip that prefix to activate
-them, and the indentation left behind is already correct. Every other line in
-the block is explanation.
+Inside them, "#:" marks the instructions and everything else is code, commented
+out at the indentation it belongs at: select those lines and press Cmd+/
+(Ctrl+/ on Windows and Linux) to uncomment them where they sit.
 
 Run it with:  uv run steps/07-function-calling/main.py
 """
 
-# ---- TODO (Step 7.1): Imports ---------------------------------------------
-# You need five more imports for this step. Add them to the groups below,
-# keeping each group alphabetical:
-#
-#   standard library:
-#     import json                                 (parse the LLM's arguments)
-#     from datetime import datetime               (the function's actual work)
-#     from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-#
-#   third party:
-#     AgentV1SendFunctionCallResponse   -> into the deepgram.agent.v1.types
-#                                          block, first alphabetically
-#     from deepgram.types.think_settings_v1functions_item import (
-#         ThinkSettingsV1FunctionsItem,
-#     )
-# ---------------------------------------------------------------------------
+#: ---- TODO (Step 7.1): Imports --------------------------------------------
+#: You need five more imports for this step. Add them to the groups below,
+#: keeping each group alphabetical:
+#:
+#:   standard library:
+#:     import json                                 (parse the LLM's arguments)
+#:     from datetime import datetime               (the function's actual work)
+#:     from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+#:
+#:   third party:
+#:     AgentV1SendFunctionCallResponse   -> into the deepgram.agent.v1.types
+#:                                          block, first alphabetically
+#:     from deepgram.types.think_settings_v1functions_item import (
+#:         ThinkSettingsV1FunctionsItem,
+#:     )
+#: --------------------------------------------------------------------------
 
 from deepgram.agent.v1.types import (
     AgentV1Settings,
@@ -61,62 +61,62 @@ SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For 
 EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
 EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
 
-# ---- TODO (Step 7.2): Write the function ----------------------------------
-# Write the Python the agent will call. Signature:
-#
-#: def get_current_time(timezone: str = "UTC") -> str:
-#
-# It should build a ZoneInfo from `timezone`, falling back to UTC inside a
-# try/except (ZoneInfoNotFoundError, ValueError) -- the LLM invents
-# plausible-but-wrong timezone names often enough that raising would end
-# otherwise fine conversations.
-#
-# Return a *sentence*, not a data structure. Whatever you return is fed back to
-# the LLM and read aloud, so "It is 2:15 PM on Tuesday, August 05 in
-# America/New_York." works far better than {"hour": 14, "minute": 15}.
-#
-# Note: strftime's %-I (hour with no leading zero) is a glibc/BSD extension and
-# fails on Windows. Use "%I:%M %p" and .lstrip("0") instead.
-#
-# Then map the advertised name to the callable:
-#
-#: FUNCTION_HANDLERS = {"get_current_time": get_current_time}
-#
-# Docstrings are required here -- ruff is configured with pydocstyle (google).
-# ---------------------------------------------------------------------------
+#: ---- TODO (Step 7.2): Write the function ---------------------------------
+#: Write the Python the agent will call. Signature:
+#:
+# def get_current_time(timezone: str = "UTC") -> str:
+#:
+#: It should build a ZoneInfo from `timezone`, falling back to UTC inside a
+#: try/except (ZoneInfoNotFoundError, ValueError) -- the LLM invents
+#: plausible-but-wrong timezone names often enough that raising would end
+#: otherwise fine conversations.
+#:
+#: Return a *sentence*, not a data structure. Whatever you return is fed back to
+#: the LLM and read aloud, so "It is 2:15 PM on Tuesday, August 05 in
+#: America/New_York." works far better than {"hour": 14, "minute": 15}.
+#:
+#: Note: strftime's %-I (hour with no leading zero) is a glibc/BSD extension and
+#: fails on Windows. Use "%I:%M %p" and .lstrip("0") instead.
+#:
+#: Then map the advertised name to the callable:
+#:
+# FUNCTION_HANDLERS = {"get_current_time": get_current_time}
+#:
+#: Docstrings are required here -- ruff is configured with pydocstyle (google).
+#: --------------------------------------------------------------------------
 
-# ---- TODO (Step 7.3): Advertise the function ------------------------------
-# Build the list the agent is told about. This is advertising only: the LLM
-# decides *whether* to call, your code decides *what happens* when it does.
-#
-#: FUNCTIONS = [
-#:     ThinkSettingsV1FunctionsItem(
-#:         name="get_current_time",
-#:         description=(
-#:             "Get the current date and time in a given IANA timezone. Use "
-#:             "this whenever the user asks what time it is or what today's "
-#:             "date is."
-#:         ),
-#:         parameters={  # plain JSON Schema, as the LLM's tool API expects
-#:             "type": "object",
-#:             "properties": {
-#:                 "timezone": {
-#:                     "type": "string",
-#:                     "description": "IANA timezone name, e.g. Europe/London.",
-#:                 },
-#:             },
-#:             "required": ["timezone"],
-#:         },
-#:     ),
-#: ]
-#
-# The description is the prompt. It is the only thing the LLM reads when
-# deciding to call, so spell out *when* to use it, not just what it does.
-#
-# Leaving "endpoint" unset is what marks this function client-side -- that is
-# why Deepgram sends the call down the socket to you instead of calling an HTTP
-# endpoint itself.
-# ---------------------------------------------------------------------------
+#: ---- TODO (Step 7.3): Advertise the function -----------------------------
+#: Build the list the agent is told about. This is advertising only: the LLM
+#: decides *whether* to call, your code decides *what happens* when it does.
+#:
+# FUNCTIONS = [
+#     ThinkSettingsV1FunctionsItem(
+#         name="get_current_time",
+#         description=(
+#             "Get the current date and time in a given IANA timezone. Use "
+#             "this whenever the user asks what time it is or what today's "
+#             "date is."
+#         ),
+#         parameters={  # plain JSON Schema, as the LLM's tool API expects
+#             "type": "object",
+#             "properties": {
+#                 "timezone": {
+#                     "type": "string",
+#                     "description": "IANA timezone name, e.g. Europe/London.",
+#                 },
+#             },
+#             "required": ["timezone"],
+#         },
+#     ),
+# ]
+#:
+#: The description is the prompt. It is the only thing the LLM reads when
+#: deciding to call, so spell out *when* to use it, not just what it does.
+#:
+#: Leaving "endpoint" unset is what marks this function client-side -- that is
+#: why Deepgram sends the call down the socket to you instead of calling an HTTP
+#: endpoint itself.
+#: --------------------------------------------------------------------------
 
 SETTINGS = AgentV1Settings(
     audio=AgentV1SettingsAudio(
@@ -152,9 +152,9 @@ SETTINGS = AgentV1Settings(
                 "You are speaking out loud, so never use markdown, bullet "
                 "points, or emoji."
             ),
-            # ---- TODO (Step 7.4): Attach the functions --------------------
-            # Add:  functions=FUNCTIONS,
-            # ---------------------------------------------------------------
+            #: ---- TODO (Step 7.4): Attach the functions -------------------
+            #: Add:  functions=FUNCTIONS,
+            #: --------------------------------------------------------------
         ),
         # Flux TTS is Deepgram's streaming, turn-based voice engine built for
         # voice agents. The "flux-" model prefix routes the agent to the v2
@@ -172,36 +172,36 @@ SETTINGS = AgentV1Settings(
     ),
 )
 
-# ---- TODO (Step 7.5): Handle the call -------------------------------------
-# Write a module-level function:
-#
-#: def handle_function_call(agent: AgentHandle, message: object) -> None:
-#
-# A FunctionCallRequest carries a "functions" list. Loop over it; each entry has
-# .id, .name, and .arguments (a JSON *string*, not a dict). For each one:
-#
-#   1. Look the name up in FUNCTION_HANDLERS.
-#   2. Call it with  handler(**json.loads(arguments))
-#   3. Send the result back:
-#
-#        agent.send_function_call_response(
-#            AgentV1SendFunctionCallResponse(id=call.id, name=name, content=content),
-#        )
-#
-# Two things that will bite you:
-#
-#   * Catch exceptions and return the error text as `content`. The agent is
-#     mid-turn and blocked waiting on you. A raised exception escapes into the
-#     SDK's receive loop, surfaces as EventType.ERROR, and drops the call.
-#
-#   * This runs on the SDK's receive loop -- the same thread delivering audio.
-#     A slow function stalls playback. Keep handlers fast, or hand the work to
-#     a thread and reply when it finishes. Routing audio through the browser
-#     does not change this: the bytes still pass through this thread on their
-#     way out.
-#
-# Print the call and the result. You want to see what the LLM actually passed.
-# ---------------------------------------------------------------------------
+#: ---- TODO (Step 7.5): Handle the call ------------------------------------
+#: Write a module-level function:
+#:
+# def handle_function_call(agent: AgentHandle, message: object) -> None:
+#:
+#: A FunctionCallRequest carries a "functions" list. Loop over it; each entry has
+#: .id, .name, and .arguments (a JSON *string*, not a dict). For each one:
+#:
+#:   1. Look the name up in FUNCTION_HANDLERS.
+#:   2. Call it with  handler(**json.loads(arguments))
+#:   3. Send the result back:
+#:
+#:        agent.send_function_call_response(
+#:            AgentV1SendFunctionCallResponse(id=call.id, name=name, content=content),
+#:        )
+#:
+#: Two things that will bite you:
+#:
+#:   * Catch exceptions and return the error text as `content`. The agent is
+#:     mid-turn and blocked waiting on you. A raised exception escapes into the
+#:     SDK's receive loop, surfaces as EventType.ERROR, and drops the call.
+#:
+#:   * This runs on the SDK's receive loop -- the same thread delivering audio.
+#:     A slow function stalls playback. Keep handlers fast, or hand the work to
+#:     a thread and reply when it finishes. Routing audio through the browser
+#:     does not change this: the bytes still pass through this thread on their
+#:     way out.
+#:
+#: Print the call and the result. You want to see what the LLM actually passed.
+#: --------------------------------------------------------------------------
 
 
 def on_message(agent: AgentHandle, player: Player, message: object) -> None:
@@ -241,16 +241,16 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         print(">> Agent started speaking")
     elif message_type == "AgentAudioDone":
         print(">> Agent finished speaking")
-    # ---- TODO (Step 7.6): Dispatch the request ----------------------------
-    # Add a branch, above the LatencyReport one:
-    #
-    #: elif message_type == "FunctionCallRequest":
-    #:     handle_function_call(agent, message)
-    #
-    # Without it, the fallthrough at the bottom prints ">> FunctionCallRequest"
-    # and the agent waits forever for a reply that never comes -- a useful
-    # thing to see once on purpose.
-    # -----------------------------------------------------------------------
+    #: ---- TODO (Step 7.6): Dispatch the request ---------------------------
+    #: Add a branch, above the LatencyReport one:
+    #:
+    # elif message_type == "FunctionCallRequest":
+    #     handle_function_call(agent, message)
+    #:
+    #: Without it, the fallthrough at the bottom prints ">> FunctionCallRequest"
+    #: and the agent waits forever for a reply that never comes -- a useful
+    #: thing to see once on purpose.
+    #: ----------------------------------------------------------------------
     elif message_type == "LatencyReport":
         # One report per turn, arriving right after the reply starts. Printed,
         # it buries the conversation -- Step 8 turns it on deliberately, once

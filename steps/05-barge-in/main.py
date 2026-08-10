@@ -8,9 +8,10 @@ prints ">> UserStartedSpeaking". That gap between what the server knows and what
 your speaker is doing is the bug you are about to fix, and it is the difference
 between a demo and something a person would willingly use.
 
-Look for the "TODO (Step 5.1)" block below. Inside them, lines marked "#:" are
-the code -- strip that prefix to activate them, and the indentation left behind
-is already correct. Every other line in the block is explanation.
+Look for the "TODO (Step 5.1)" block below. Inside them, "#:" marks the
+instructions and everything else is code, commented out at the indentation it
+belongs at: select those lines and press Cmd+/ (Ctrl+/ on Windows and Linux) to
+uncomment them where they sit.
 
 Run it with:  uv run steps/05-barge-in/main.py
 """
@@ -103,43 +104,43 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         role = getattr(message, "role", "unknown")
         content = getattr(message, "content", "")
         print(f"[{role}] {content}")
-    # ---- TODO (Step 5.1): Stop talking when the user starts ---------------
-    # Add a branch here for "UserStartedSpeaking":
-    #
-    #: elif message_type == "UserStartedSpeaking":
-    #:     player.clear()
-    #:     print(">> User started speaking (barge-in: playback cleared)")
-    #
-    # What has already happened by the time this arrives: Flux detected
-    # start-of-turn server-side and the agent stopped sending audio. The
-    # problem is everything it *already* sent, which is queued and will keep
-    # playing over the user for as long as it takes to drain -- easily a second
-    # or two. Every byte of it was produced before the user opened their mouth,
-    # so none of it is worth keeping.
-    #
-    # One call, and it is worth knowing what it has to do, because you will
-    # write this yourself the next time you build one of these. There are two
-    # queues, and clearing only one leaves the bug in place:
-    #
-    #   * The browser's playback queue, inside an AudioWorklet. See
-    #     PlaybackProcessor in web/static/worklets.js -- the "clear" message
-    #     empties it.
-    #
-    #   * The queue on *this* side, holding audio that arrived from Deepgram
-    #     but has not yet been sent to the browser. Telling the page to flush
-    #     while seconds of TTS still sit here just means it plays a moment
-    #     later. See Outbox.drop_audio in web/audio.py, and note the ordering:
-    #     drop first, *then* send the clear.
-    #
-    # The equivalent trap in the PortAudio version is stop() versus abort() --
-    # stop() drains the buffer, playing everything already queued before it
-    # stops, which is precisely the behaviour you are trying to eliminate.
-    # LocalPlayer.clear in web/audio.py uses abort() for that reason.
-    #
-    # Note there is no client-side voice activity detection anywhere in this
-    # file. Flux does turn detection inside the model; the client's entire
-    # obligation is reacting to this one message promptly.
-    # -----------------------------------------------------------------------
+    #: ---- TODO (Step 5.1): Stop talking when the user starts --------------
+    #: Add a branch here for "UserStartedSpeaking":
+    #:
+    # elif message_type == "UserStartedSpeaking":
+    #     player.clear()
+    #     print(">> User started speaking (barge-in: playback cleared)")
+    #:
+    #: What has already happened by the time this arrives: Flux detected
+    #: start-of-turn server-side and the agent stopped sending audio. The
+    #: problem is everything it *already* sent, which is queued and will keep
+    #: playing over the user for as long as it takes to drain -- easily a second
+    #: or two. Every byte of it was produced before the user opened their mouth,
+    #: so none of it is worth keeping.
+    #:
+    #: One call, and it is worth knowing what it has to do, because you will
+    #: write this yourself the next time you build one of these. There are two
+    #: queues, and clearing only one leaves the bug in place:
+    #:
+    #:   * The browser's playback queue, inside an AudioWorklet. See
+    #:     PlaybackProcessor in web/static/worklets.js -- the "clear" message
+    #:     empties it.
+    #:
+    #:   * The queue on *this* side, holding audio that arrived from Deepgram
+    #:     but has not yet been sent to the browser. Telling the page to flush
+    #:     while seconds of TTS still sit here just means it plays a moment
+    #:     later. See Outbox.drop_audio in web/audio.py, and note the ordering:
+    #:     drop first, *then* send the clear.
+    #:
+    #: The equivalent trap in the PortAudio version is stop() versus abort() --
+    #: stop() drains the buffer, playing everything already queued before it
+    #: stops, which is precisely the behaviour you are trying to eliminate.
+    #: LocalPlayer.clear in web/audio.py uses abort() for that reason.
+    #:
+    #: Note there is no client-side voice activity detection anywhere in this
+    #: file. Flux does turn detection inside the model; the client's entire
+    #: obligation is reacting to this one message promptly.
+    #: ----------------------------------------------------------------------
     elif message_type == "AgentThinking":
         print(">> Agent thinking...")
     elif message_type == "AgentStartedSpeaking":

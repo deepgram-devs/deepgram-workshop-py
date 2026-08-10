@@ -11,9 +11,10 @@ balanced default. Balanced is not the same as right for what you are building.
 This step is dials rather than architecture, and it goes in the order any
 optimization goes: measure first, then move something, then measure again.
 
-Look for the "TODO (Step 8.x)" blocks below. Inside them, lines marked "#:" are
-the code -- strip that prefix to activate them, and the indentation left behind
-is already correct. Every other line in the block is explanation.
+Look for the "TODO (Step 8.x)" blocks below. Inside them, "#:" marks the
+instructions and everything else is code, commented out at the indentation it
+belongs at: select those lines and press Cmd+/ (Ctrl+/ on Windows and Linux) to
+uncomment them where they sit.
 
 Run it with:  uv run steps/08-optimize/main.py
 """
@@ -51,26 +52,26 @@ SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For 
 # that chunk size from SAMPLE_RATE, so this constant is the only place to change
 # it.
 
-# ---- TODO (Step 8.2): Move the dials --------------------------------------
-# Flux scores every turn for end-of-turn confidence as the audio streams in.
-# These two constants act on that score, and they trade against each other:
-# end a turn too early and you cut people off mid-thought, too late and every
-# exchange carries a dead pause. There is no setting that avoids both.
-#
-# Once TODO 8.1 is printing a number, run the four rows in the LAB's table --
-# 0.5/5000, 0.9/5000, 0.7/500, then back to 0.7/5000 -- holding the same short
-# conversation each time. Listen, and watch ">> Latency:" alongside.
-#
-# A value outside its valid range does not fail the handshake. It comes back as
-# a Warning, which the branch you added in Step 6 prints. That is the payoff for
-# writing it: a threshold that seems to do nothing is usually a warning you can
-# now actually read.
-#
-# Also available: eager_eot_threshold (0.3-0.9, off by default, must be <=
-# EOT_THRESHOLD). It starts the LLM on a *probable* turn end and discards the
-# work if the user keeps talking -- lower latency, more LLM calls. Add it in the
-# provider below once the two constants make sense on their own.
-# ---------------------------------------------------------------------------
+#: ---- TODO (Step 8.2): Move the dials -------------------------------------
+#: Flux scores every turn for end-of-turn confidence as the audio streams in.
+#: These two constants act on that score, and they trade against each other:
+#: end a turn too early and you cut people off mid-thought, too late and every
+#: exchange carries a dead pause. There is no setting that avoids both.
+#:
+#: Once TODO 8.1 is printing a number, run the four rows in the LAB's table --
+#: 0.5/5000, 0.9/5000, 0.7/500, then back to 0.7/5000 -- holding the same short
+#: conversation each time. Listen, and watch ">> Latency:" alongside.
+#:
+#: A value outside its valid range does not fail the handshake. It comes back as
+#: a Warning, which the branch you added in Step 6 prints. That is the payoff for
+#: writing it: a threshold that seems to do nothing is usually a warning you can
+#: now actually read.
+#:
+#: Also available: eager_eot_threshold (0.3-0.9, off by default, must be <=
+#: EOT_THRESHOLD). It starts the LLM on a *probable* turn end and discards the
+#: work if the user keeps talking -- lower latency, more LLM calls. Add it in the
+#: provider below once the two constants make sense on their own.
+#: --------------------------------------------------------------------------
 EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
 EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
 
@@ -274,25 +275,25 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         handle_function_call(agent, message)
     elif message_type == "LatencyReport":
         # One report per turn, arriving right after the reply starts.
-        # ---- TODO (Step 8.1): Measure before you tune ---------------------
-        # Uncomment the three lines below. total_latency is end-of-utterance to
-        # first audio byte -- the exact number the knobs in TODO 8.2 move, and
-        # the only honest way to tell whether a change helped. Everything else
-        # is impression.
-        #
-        # The report also carries ttt_token_latency, ttt_text_latency,
-        # ttt_tool_latency, ttt_thinking_latency, and tts_latency. Every field
-        # is optional -- absent, not zero, when it does not apply, which is why
-        # the None check below is not decoration.
-        #
-        # The browser has been showing this number all along, on the right of
-        # the activity line above the transcript. Watching it move while you
-        # talk is a faster feedback loop than reading the console; the print is
-        # what lets you keep a record across runs.
-        # -------------------------------------------------------------------
-        #: total = getattr(message, "total_latency", None)
-        #: if total is not None:
-        #:     print(f">> Latency: {total:.2f}s")
+        #: ---- TODO (Step 8.1): Measure before you tune --------------------
+        #: Uncomment the three lines below. total_latency is end-of-utterance to
+        #: first audio byte -- the exact number the knobs in TODO 8.2 move, and
+        #: the only honest way to tell whether a change helped. Everything else
+        #: is impression.
+        #:
+        #: The report also carries ttt_token_latency, ttt_text_latency,
+        #: ttt_tool_latency, ttt_thinking_latency, and tts_latency. Every field
+        #: is optional -- absent, not zero, when it does not apply, which is why
+        #: the None check below is not decoration.
+        #:
+        #: The browser has been showing this number all along, on the right of
+        #: the activity line above the transcript. Watching it move while you
+        #: talk is a faster feedback loop than reading the console; the print is
+        #: what lets you keep a record across runs.
+        #: ------------------------------------------------------------------
+        # total = getattr(message, "total_latency", None)
+        # if total is not None:
+        #     print(f">> Latency: {total:.2f}s")
         pass
     elif message_type == "Error":
         code = getattr(message, "code", "unknown")

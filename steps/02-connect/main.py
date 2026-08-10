@@ -117,7 +117,7 @@ SETTINGS = AgentV1Settings(
 
 #: ---- TODO (Step 2.1): Handle inbound messages ----------------------------
 #: Everything the agent sends arrives in one function. Uncomment it here:
-#
+#:
 # def on_message(agent: AgentHandle, player: Player, message: object) -> None:
 #     """Handle one inbound frame from the agent.
 #
@@ -146,7 +146,7 @@ SETTINGS = AgentV1Settings(
 #         print(f">> Agent error: {code} - {description}")
 #     else:
 #         print(f">> {message_type}")
-#
+#:
 #: Three deliberate choices worth copying into your own agents:
 #:
 #:   * The bytes check comes first. Audio is not a JSON event and has no
@@ -177,9 +177,9 @@ def main() -> None:
     """
     #: ---- TODO (Step 2.2): Hand your agent to the bridge ------------------
     #: Uncomment this, then delete the placeholder call below it:
-    #
+    #:
     # bridge.run(settings=SETTINGS, on_message=on_message)
-    #
+    #:
     #: Note what is *not* passed: on_media. Without it the bridge never opens
     #: the microphone at all, which is why this step sends no audio and gets
     #: hung up on. Step 4 adds it.
