@@ -74,7 +74,10 @@ AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN", "")  # STS only. Leave it uns
 # string with no validation behind it -- a typo comes back from AWS, not from
 # the SDK. The "us." prefix is a cross-region inference profile and has to match
 # the region below.
-BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL") or "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+#
+# zai.glm-4.7-flash is the model this workshop is built and tested against, and
+# it needs no Bedrock use case form -- the shortest path to a working step.
+BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL") or "zai.glm-4.7-flash"
 
 # One prompt, used whichever provider ends up answering. Keeping it out of the
 # branches below is the only reason they stay readable.
