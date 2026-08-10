@@ -14,8 +14,11 @@ file falls back to OpenAI when no AWS credentials are present -- so it runs
 whether or not you have Bedrock access.
 
 Part of this step happens outside the file: AWS credentials in .env, and model
-access in the Bedrock console. Do that first, then work through the
-"TODO (Step 6b.x)" blocks below in order -- each one sits where its code goes.
+access in the Bedrock console. Do that first, then work through the "TODO (Step
+6b.x)" blocks below in order -- each one sits where its code goes. Inside them,
+lines marked "#:" are the code -- strip that prefix to activate them, and the
+indentation left behind is already correct. Every other line in the block is
+explanation.
 
 Run it with:  uv run steps/06b-bring-your-own-llm/main.py
 """
@@ -33,16 +36,16 @@ from deepgram.agent.v1.types import (
 )
 
 # ---- TODO (Step 6b.1a): Uncomment -- the credentials the provider carries.
-# from deepgram.types.aws_bedrock_think_provider_credentials import (
-#     AwsBedrockThinkProviderCredentials,
-# )
+#: from deepgram.types.aws_bedrock_think_provider_credentials import (
+#:     AwsBedrockThinkProviderCredentials,
+#: )
 from deepgram.types.speak_settings_v1 import SpeakSettingsV1
 from deepgram.types.speak_settings_v1provider import SpeakSettingsV1Provider_Deepgram
 from deepgram.types.think_settings_v1 import ThinkSettingsV1
 
 # ---- TODO (Step 6b.1b): Uncomment -- think.endpoint, the URL Deepgram calls.
-# from deepgram.types.think_settings_v1endpoint import ThinkSettingsV1Endpoint
-
+#: from deepgram.types.think_settings_v1endpoint import ThinkSettingsV1Endpoint
+#
 # ---- TODO (Step 6b.1c): Add ThinkSettingsV1Provider_AwsBedrock to the import
 # below, alongside the OpenAI provider the fallback uses. They come from the
 # same module, so it becomes a parenthesized import over several lines.
@@ -117,7 +120,7 @@ def think_settings() -> ThinkSettingsV1:
     # lets the person next to you, who never got model access approved, run your
     # file:
     #
-    #   if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+    #: if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
     #
     # Inside it, build the credentials as a plain dict: a "type" of "sts" when
     # AWS_SESSION_TOKEN is set and "iam" when it is not, plus "region",

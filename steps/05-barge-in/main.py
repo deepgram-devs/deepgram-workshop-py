@@ -8,7 +8,9 @@ prints ">> UserStartedSpeaking". That gap between what the server knows and what
 your speaker is doing is the bug you are about to fix, and it is the difference
 between a demo and something a person would willingly use.
 
-Look for the "TODO (Step 5.1)" block below.
+Look for the "TODO (Step 5.1)" block below. Inside them, lines marked "#:" are
+the code -- strip that prefix to activate them, and the indentation left behind
+is already correct. Every other line in the block is explanation.
 
 Run it with:  uv run steps/05-barge-in/main.py
 """
@@ -104,9 +106,9 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     # ---- TODO (Step 5.1): Stop talking when the user starts ---------------
     # Add a branch here for "UserStartedSpeaking":
     #
-    #   elif message_type == "UserStartedSpeaking":
-    #       player.clear()
-    #       print(">> User started speaking (barge-in: playback cleared)")
+    #: elif message_type == "UserStartedSpeaking":
+    #:     player.clear()
+    #:     print(">> User started speaking (barge-in: playback cleared)")
     #
     # What has already happened by the time this arrives: Flux detected
     # start-of-turn server-side and the agent stopped sending audio. The

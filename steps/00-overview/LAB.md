@@ -72,6 +72,8 @@ That means two useful things. If you fall behind, skip ahead and keep going. And
 
 Work the `TODO (Step N.x)` blocks in `main.py`, in order. `LAB.md` explains why each one matters.
 
+Inside a block, lines marked `#:` are the code — strip that prefix to activate them, and the indentation left behind is already correct. Every other line is explanation.
+
 > **Check yourself** — You're stuck halfway through Step 5. Where do you look for the working version?
 
 ---

@@ -7,7 +7,9 @@ Everything so far has been plumbing. This step is where the agent becomes
 *yours* -- its job, its personality, its voice, its opening line. There is less
 code here than in any other step and more to play with.
 
-Look for the "TODO (Step 6.x)" blocks below.
+Look for the "TODO (Step 6.x)" blocks below. Inside them, lines marked "#:" are
+the code -- strip that prefix to activate them, and the indentation left behind
+is already correct. Every other line in the block is explanation.
 
 Run it with:  uv run steps/06-make-it-yours/main.py
 """
@@ -187,10 +189,10 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     # Add a branch for "Warning", printing .code and .description the same way
     # the Error branch above does:
     #
-    #   elif message_type == "Warning":
-    #       code = getattr(message, "code", "unknown")
-    #       description = getattr(message, "description", "unknown warning")
-    #       print(f">> Agent warning: {code} - {description}")
+    #: elif message_type == "Warning":
+    #:     code = getattr(message, "code", "unknown")
+    #:     description = getattr(message, "description", "unknown warning")
+    #:     print(f">> Agent warning: {code} - {description}")
     #
     # Warnings are where rejected settings show up. A misspelled voice or a
     # threshold outside its valid range arrives here rather than failing the

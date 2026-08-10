@@ -11,7 +11,10 @@ No audio yet -- Step 3 handles that. The agent expects a continuous media
 stream and hangs up with CLIENT_MESSAGE_TIMEOUT after about fifteen seconds of
 receiving none, so this step ends by itself. That is the correct ending.
 
-Look for the "TODO (Step 2.x)" blocks below.
+Look for the "TODO (Step 2.x)" blocks below. Inside them, "#:" marks the
+instructions and everything else is code, commented out at the indentation it
+belongs at: select those lines and press Cmd+/ (Ctrl+/ on Windows and Linux) to
+uncomment them where they sit.
 
 Run it with:  uv run steps/02-connect/main.py
 """
@@ -112,55 +115,55 @@ SETTINGS = AgentV1Settings(
 )
 
 
-# ---- TODO (Step 2.1): Handle inbound messages -----------------------------
-# Everything the agent sends arrives in one function. Write it here:
+#: ---- TODO (Step 2.1): Handle inbound messages ----------------------------
+#: Everything the agent sends arrives in one function. Uncomment it here:
 #
-#   def on_message(agent: AgentHandle, player: Player, message: object) -> None:
-#       """Handle one inbound frame from the agent.
+# def on_message(agent: AgentHandle, player: Player, message: object) -> None:
+#     """Handle one inbound frame from the agent.
 #
-#       Args:
-#           agent: The connected agent. Unused until Step 7.
-#           player: Where audio is played. Unused until Step 3.
-#           message: Either raw bytes of Flux TTS audio, or a decoded model
-#               whose "type" attribute names the event.
-#       """
-#       if isinstance(message, bytes):
-#           # Flux TTS audio. It is already arriving -- there is just nowhere
-#           # to play it yet. Step 3 fixes that.
-#           return
+#     Args:
+#         agent: The connected agent. Unused until Step 7.
+#         player: Where audio is played. Unused until Step 3.
+#         message: Either raw bytes of Flux TTS audio, or a decoded model
+#             whose "type" attribute names the event.
+#     """
+#     if isinstance(message, bytes):
+#         # Flux TTS audio. It is already arriving -- there is just nowhere
+#         # to play it yet. Step 3 fixes that.
+#         return
 #
-#       message_type = getattr(message, "type", "Unknown")
+#     message_type = getattr(message, "type", "Unknown")
 #
-#       if message_type == "SettingsApplied":
-#           print(">> Settings applied")
-#       elif message_type == "ConversationText":
-#           role = getattr(message, "role", "unknown")
-#           content = getattr(message, "content", "")
-#           print(f"[{role}] {content}")
-#       elif message_type == "Error":
-#           code = getattr(message, "code", "unknown")
-#           description = getattr(message, "description", "unknown error")
-#           print(f">> Agent error: {code} - {description}")
-#       else:
-#           print(f">> {message_type}")
+#     if message_type == "SettingsApplied":
+#         print(">> Settings applied")
+#     elif message_type == "ConversationText":
+#         role = getattr(message, "role", "unknown")
+#         content = getattr(message, "content", "")
+#         print(f"[{role}] {content}")
+#     elif message_type == "Error":
+#         code = getattr(message, "code", "unknown")
+#         description = getattr(message, "description", "unknown error")
+#         print(f">> Agent error: {code} - {description}")
+#     else:
+#         print(f">> {message_type}")
 #
-# Three deliberate choices worth copying into your own agents:
-#
-#   * The bytes check comes first. Audio is not a JSON event and has no
-#     .type -- reaching for one would give you "Unknown" thousands of times
-#     a minute.
-#
-#   * The else branch prints instead of ignoring. Deepgram adds server events
-#     over time; the fallthrough means new ones show up in your console rather
-#     than vanishing. You will use it in Step 5.
-#
-#   * getattr(..., default) everywhere. These models come off the wire with
-#     optional fields -- absent, not empty -- so direct attribute access is a
-#     crash waiting for an unusual turn.
-#
-# The signature is fixed: the bridge calls this with three arguments whether
-# you use them or not. `player` starts earning its place in Step 3.
-# ---------------------------------------------------------------------------
+#: Three deliberate choices worth copying into your own agents:
+#:
+#:   * The bytes check comes first. Audio is not a JSON event and has no
+#:     .type -- reaching for one would give you "Unknown" thousands of times
+#:     a minute.
+#:
+#:   * The else branch prints instead of ignoring. Deepgram adds server events
+#:     over time; the fallthrough means new ones show up in your console rather
+#:     than vanishing. You will use it in Step 5.
+#:
+#:   * getattr(..., default) everywhere. These models come off the wire with
+#:     optional fields -- absent, not empty -- so direct attribute access is a
+#:     crash waiting for an unusual turn.
+#:
+#: The signature is fixed: the bridge calls this with three arguments whether
+#: you use them or not. `player` starts earning its place in Step 3.
+#: --------------------------------------------------------------------------
 
 
 def main() -> None:
@@ -172,15 +175,15 @@ def main() -> None:
     them. The agent discards media until that handshake completes, so the order
     matters -- see _run() in web/session.py for exactly how it is enforced.
     """
-    # ---- TODO (Step 2.2): Hand your agent to the bridge -------------------
-    # Replace the line below with:
+    #: ---- TODO (Step 2.2): Hand your agent to the bridge ------------------
+    #: Uncomment this, then delete the placeholder call below it:
     #
-    #   bridge.run(settings=SETTINGS, on_message=on_message)
+    # bridge.run(settings=SETTINGS, on_message=on_message)
     #
-    # Note what is *not* passed: on_media. Without it the bridge never opens
-    # the microphone at all, which is why this step sends no audio and gets
-    # hung up on. Step 4 adds it.
-    # -----------------------------------------------------------------------
+    #: Note what is *not* passed: on_media. Without it the bridge never opens
+    #: the microphone at all, which is why this step sends no audio and gets
+    #: hung up on. Step 4 adds it.
+    #: ----------------------------------------------------------------------
     bridge.run(settings=SETTINGS, on_message=lambda agent, player, message: None)
 
 

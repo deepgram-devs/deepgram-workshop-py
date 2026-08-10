@@ -11,7 +11,9 @@ balanced default. Balanced is not the same as right for what you are building.
 This step is dials rather than architecture, and it goes in the order any
 optimization goes: measure first, then move something, then measure again.
 
-Look for the "TODO (Step 8.x)" blocks below.
+Look for the "TODO (Step 8.x)" blocks below. Inside them, lines marked "#:" are
+the code -- strip that prefix to activate them, and the indentation left behind
+is already correct. Every other line in the block is explanation.
 
 Run it with:  uv run steps/08-optimize/main.py
 """
@@ -288,9 +290,9 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         # talk is a faster feedback loop than reading the console; the print is
         # what lets you keep a record across runs.
         # -------------------------------------------------------------------
-        # total = getattr(message, "total_latency", None)
-        # if total is not None:
-        #     print(f">> Latency: {total:.2f}s")
+        #: total = getattr(message, "total_latency", None)
+        #: if total is not None:
+        #:     print(f">> Latency: {total:.2f}s")
         pass
     elif message_type == "Error":
         code = getattr(message, "code", "unknown")

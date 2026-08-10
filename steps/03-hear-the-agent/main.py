@@ -15,7 +15,9 @@ AudioWorklet, out the speaker. That queue is worth looking at --
 web/static/worklets.js, class PlaybackProcessor -- because Step 5 is entirely
 about throwing it away at the right moment.
 
-Look for the "TODO (Step 3.x)" blocks below.
+Look for the "TODO (Step 3.x)" blocks below. Inside them, lines marked "#:" are
+the code -- strip that prefix to activate them, and the indentation left behind
+is already correct. Every other line in the block is explanation.
 
 Run it with:  uv run steps/03-hear-the-agent/main.py
 """
@@ -95,7 +97,7 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
         # This branch already catches every audio frame -- it just drops them.
         # Hand them to the player instead:
         #
-        #   player.send(message)
+        #: player.send(message)
         #
         # One line, and no error handling, which is the point of routing audio
         # through the bridge: a chunk that cannot be played is the bridge's
@@ -124,14 +126,14 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     # interesting ones proper branches so the console reads like a transcript
     # of what the agent is doing:
     #
-    #   elif message_type == "AgentThinking":
-    #       print(">> Agent thinking...")
-    #   elif message_type == "AgentStartedSpeaking":
-    #       print(">> Agent started speaking")
-    #   elif message_type == "AgentAudioDone":
-    #       print(">> Agent finished speaking")
-    #   elif message_type == "LatencyReport":
-    #       pass
+    #: elif message_type == "AgentThinking":
+    #:     print(">> Agent thinking...")
+    #: elif message_type == "AgentStartedSpeaking":
+    #:     print(">> Agent started speaking")
+    #: elif message_type == "AgentAudioDone":
+    #:     print(">> Agent finished speaking")
+    #: elif message_type == "LatencyReport":
+    #:     pass
     #
     # LatencyReport gets an explicit `pass` rather than being left to the
     # fallthrough: it fires once per turn and would otherwise clutter the

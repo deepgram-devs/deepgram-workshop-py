@@ -66,6 +66,8 @@ Same agent code either way — see [web/README.md](web/README.md) for what chang
 
 Each folder holds the finished state of the step before it. Open `LAB.md` for instructions, work the `TODO (Step N.x)` blocks in `main.py`, and check the next folder if you get stuck — it's the answer key.
 
+Inside a TODO block, lines marked `#:` are the code. Strip that prefix and the indentation left behind is already correct — in most editors, select the block and regex-replace `^(\s*)#: ?` with `$1`. Every other line in the block is explanation.
+
 | Step | You build | Run it | Time |
 |---|---|---|---|
 | [0 — Overview](steps/00-overview/LAB.md) | *(read only)* The parts of a voice agent | — | 10 min |

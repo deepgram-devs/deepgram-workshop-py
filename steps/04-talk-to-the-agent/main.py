@@ -11,7 +11,9 @@ The microphone itself lives in the browser, and it has been open since you
 pressed Connect -- that is what the level meter on the page has been showing.
 What is missing is the instruction to do anything with it.
 
-Look for the "TODO (Step 4.x)" blocks below.
+Look for the "TODO (Step 4.x)" blocks below. Inside them, lines marked "#:" are
+the code -- strip that prefix to activate them, and the indentation left behind
+is already correct. Every other line in the block is explanation.
 
 Run it with:  uv run steps/04-talk-to-the-agent/main.py
 """
@@ -123,14 +125,14 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
 # Write the other half of the conversation. Every 80 ms the browser's capture
 # worklet hands the bridge a chunk of PCM, and the bridge calls this with it:
 #
-#   def on_media(agent: AgentHandle, audio: bytes) -> None:
-#       """Forward one captured chunk of microphone audio to the agent.
-#
-#       Args:
-#           agent: The connected agent.
-#           audio: One 80 ms chunk of linear16 PCM from the microphone.
-#       """
-#       agent.send_media(audio)
+#: def on_media(agent: AgentHandle, audio: bytes) -> None:
+#:     """Forward one captured chunk of microphone audio to the agent.
+#:
+#:     Args:
+#:         agent: The connected agent.
+#:         audio: One 80 ms chunk of linear16 PCM from the microphone.
+#:     """
+#:     agent.send_media(audio)
 #
 # That is the whole thing, and the shortness is the lesson. Nothing here
 # inspects the audio, measures its volume, trims silence, or decides whether
@@ -159,7 +161,7 @@ def main() -> None:
     # ---- TODO (Step 4.2): Open the microphone -----------------------------
     # Add on_media to the call below:
     #
-    #   bridge.run(settings=SETTINGS, on_message=on_message, on_media=on_media)
+    #: bridge.run(settings=SETTINGS, on_message=on_message, on_media=on_media)
     #
     # Passing it is what tells the browser to start capturing. Until now the
     # bridge has been sending the page a "do not capture" flag along with the

@@ -7,6 +7,9 @@ function in the agent's settings, handle the FunctionCallRequest the agent
 sends when the LLM decides to use it, and send the result back.
 
 Look for the "TODO (Step 7.x)" blocks below and work through them in order.
+Inside them, lines marked "#:" are the code -- strip that prefix to activate
+them, and the indentation left behind is already correct. Every other line in
+the block is explanation.
 
 Run it with:  uv run steps/07-function-calling/main.py
 """
@@ -61,7 +64,7 @@ EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this 
 # ---- TODO (Step 7.2): Write the function ----------------------------------
 # Write the Python the agent will call. Signature:
 #
-#   def get_current_time(timezone: str = "UTC") -> str:
+#: def get_current_time(timezone: str = "UTC") -> str:
 #
 # It should build a ZoneInfo from `timezone`, falling back to UTC inside a
 # try/except (ZoneInfoNotFoundError, ValueError) -- the LLM invents
@@ -77,7 +80,7 @@ EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this 
 #
 # Then map the advertised name to the callable:
 #
-#   FUNCTION_HANDLERS = {"get_current_time": get_current_time}
+#: FUNCTION_HANDLERS = {"get_current_time": get_current_time}
 #
 # Docstrings are required here -- ruff is configured with pydocstyle (google).
 # ---------------------------------------------------------------------------
@@ -86,26 +89,26 @@ EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this 
 # Build the list the agent is told about. This is advertising only: the LLM
 # decides *whether* to call, your code decides *what happens* when it does.
 #
-#   FUNCTIONS = [
-#       ThinkSettingsV1FunctionsItem(
-#           name="get_current_time",
-#           description=(
-#               "Get the current date and time in a given IANA timezone. Use "
-#               "this whenever the user asks what time it is or what today's "
-#               "date is."
-#           ),
-#           parameters={  # plain JSON Schema, as the LLM's tool API expects
-#               "type": "object",
-#               "properties": {
-#                   "timezone": {
-#                       "type": "string",
-#                       "description": "IANA timezone name, e.g. Europe/London.",
-#                   },
-#               },
-#               "required": ["timezone"],
-#           },
-#       ),
-#   ]
+#: FUNCTIONS = [
+#:     ThinkSettingsV1FunctionsItem(
+#:         name="get_current_time",
+#:         description=(
+#:             "Get the current date and time in a given IANA timezone. Use "
+#:             "this whenever the user asks what time it is or what today's "
+#:             "date is."
+#:         ),
+#:         parameters={  # plain JSON Schema, as the LLM's tool API expects
+#:             "type": "object",
+#:             "properties": {
+#:                 "timezone": {
+#:                     "type": "string",
+#:                     "description": "IANA timezone name, e.g. Europe/London.",
+#:                 },
+#:             },
+#:             "required": ["timezone"],
+#:         },
+#:     ),
+#: ]
 #
 # The description is the prompt. It is the only thing the LLM reads when
 # deciding to call, so spell out *when* to use it, not just what it does.
@@ -172,7 +175,7 @@ SETTINGS = AgentV1Settings(
 # ---- TODO (Step 7.5): Handle the call -------------------------------------
 # Write a module-level function:
 #
-#   def handle_function_call(agent: AgentHandle, message: object) -> None:
+#: def handle_function_call(agent: AgentHandle, message: object) -> None:
 #
 # A FunctionCallRequest carries a "functions" list. Loop over it; each entry has
 # .id, .name, and .arguments (a JSON *string*, not a dict). For each one:
@@ -241,8 +244,8 @@ def on_message(agent: AgentHandle, player: Player, message: object) -> None:
     # ---- TODO (Step 7.6): Dispatch the request ----------------------------
     # Add a branch, above the LatencyReport one:
     #
-    #   elif message_type == "FunctionCallRequest":
-    #       handle_function_call(agent, message)
+    #: elif message_type == "FunctionCallRequest":
+    #:     handle_function_call(agent, message)
     #
     # Without it, the fallthrough at the bottom prints ">> FunctionCallRequest"
     # and the agent waits forever for a reply that never comes -- a useful
