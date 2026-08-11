@@ -16,9 +16,9 @@ This folder runs as-is, nothing from Step 1 carries forward; that was a diagnost
 uv run steps/02-connect/main.py
 ```
 
-A page opens with a **Connect** button. Press it and you get `>> Connection opened` in the terminal, a handshake is initatied but nothing happens. The settings go out and nothing catches the replies. 
+A page opens with a **Connect** button. Press it and you get `>> Connection opened` in the terminal, a handshake is initiated but nothing happens. The settings go out and nothing catches the replies.
 
-You'll continue by adding the orchistation that happens after the handshake is finished.
+You'll continue by adding the orchestration that happens after the handshake is finished.
 
 ## The mental model
 
@@ -37,7 +37,7 @@ Every step in this workshop either adds to that object or reacts to what it prod
 
 The browser is used to make the microphone and speakers easy to access during the workshop. Your `main.py` never touches a microphone, a speaker, or a socket. It hands two things to `bridge.run()`: the agent you want, and a function to call when the agent says something. The shared code in [`web/`](../../web/) does the rest.
 
-The bridge hides plumbing, never concepts, and connecting to a voice agent, your the main takeaway from this workshop. Opening the socket is not the same as being connected. A session is a handshake with a gate in the middle: you describe the agent you want, Deepgram confirms it accepted that description, and only after the confirmation does audio mean anything.
+The bridge hides plumbing, never concepts, and connecting to a voice agent is your main takeaway from this workshop. Opening the socket is not the same as being connected. A session is a handshake with a gate in the middle: you describe the agent you want, Deepgram confirms it accepted that description, and only after the confirmation does audio mean anything.
 
 Open [`web/session.py`](../../web/session.py) and find `_run()`.
 

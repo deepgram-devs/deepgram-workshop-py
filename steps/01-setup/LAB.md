@@ -11,7 +11,7 @@
 
 ## Why this step exists
 
-Voice work fails in a specific, predictable order: the api key is wrong, the browser never got microphone permission, or you are serving the page from somewhere the browser refuses to trust with a microphone at all. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
+Voice work fails in a specific, predictable order: the API key is wrong, the browser never got microphone permission, or you are serving the page from somewhere the browser refuses to trust with a microphone at all. Each of those produces a confusing error twenty minutes later, tangled up in WebSocket code where it looks like a Deepgram problem. Running the checks now turns all three into a one-line answer.
 
 This step also triggers your browser's microphone permission prompt. The audio half of this check runs **in a browser page**, because that is where the rest of the workshop's audio runs. Be sure to approve the browser's request to access your microphone. If you need to change audio devices at any point, you may need to repeat this process by clicking the lock icon from the browser's address bar.
 
@@ -75,7 +75,7 @@ OK   Microphone          Heard you (peak 0.34).
 OK   Speaker             Played a tone -- you should have heard it
 ```
 
-Every should row read `OK`, and you heard a tone through your speakers. If there are any problems, start troubleshooting using steps below below.
+Every row should read `OK`, and you heard a tone through your speakers. If there are any problems, start troubleshooting using the steps below.
 
 ## Stuck?
 
