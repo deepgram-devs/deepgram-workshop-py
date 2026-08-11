@@ -44,8 +44,6 @@ Keep the prompt short for a second reason: every turn re-sends every token, and 
 
 **TODO 6.2: Pick a voice.** Swap `flux-alexis-en` for another Flux voice. The full list lives in the [Deepgram TTS models documentation](https://developers.deepgram.com/docs/tts-models).
 
-Misspell one deliberately first and run it. Once you've finished TODO 6.4 you'll see a `>> Agent warning` and the agent falls back rather than failing. Knowing that saves you an hour some day when an agent sounds wrong and nothing has errored.
-
 **TODO 6.2b: Write a new opening line.** Match it to the job you just assigned.
 
 **TODO 6.3: Try a different brain.** `gpt-4o-mini` is fast and cheap, which matters more than raw capability when someone is waiting to hear a reply. Switch to `gpt-4o` and watch the latency readout on the right of the browser's activity line. You're paying for that capability in a currency your users feel directly. Step 8 is where that number becomes the whole point.
