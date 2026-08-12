@@ -1,10 +1,10 @@
 # Step 6b: Bring your own LLM (optional)
 
-> **Optional, and it needs something you may not have.** This step runs the agent's brain on Amazon Bedrock, in *your* AWS account. That means AWS credentials with Bedrock access, and Bedrock grants model access per model **and** per region. For a fresh account that is usually a day or two of calendar time, not five minutes of work.
+> **Optional, and it needs something you may not have.** This step runs the agent's brain on Amazon Bedrock, in *your* AWS account. That means AWS credentials with Bedrock access, and Bedrock grants model access per model **and** per region.
 >
-> Skipping it costs you nothing. Step 7 continues from Step 6 either way, and `main.py` here falls back to OpenAI when there are no AWS credentials in `.env`, so it runs regardless.
+> This step shows how Deepgram's SDK supports the AWS ecosystem. Step 7 continues from Step 6 with or without AWS, and `main.py` here falls back to OpenAI when there are no AWS credentials in `.env`, so it runs regardless.
 
-**Goal:** Move the LLM out of Deepgram's account and into yours.
+**Goal:** Move the LLM dependency from Deepgram's managed provider to your own hosted model in AWS Bedrock.
 
 **You'll learn**
 
@@ -30,7 +30,7 @@ That's the same agent Step 6 finished with (neutral prompt, neutral voice), and 
 
 Every step so far has needed one credential. `.env` has held a single Deepgram key, and that key has paid for speech-to-text, the LLM, and text-to-speech alike. Step 6 let you swap `gpt-4o-mini` for `gpt-4o` without so much as an OpenAI account.
 
-That is not Deepgram being unusually generous. It's a split in the provider list:
+That convenience comes from a split in the provider list:
 
 **Brokered by Deepgram:** OpenAI, Anthropic, Google, NVIDIA. Deepgram holds the account, makes the call, and bills you. You name a model and you're done.
 
@@ -64,7 +64,7 @@ Then enable model access for `zai.glm-4.7-flash` in that region, at [Bedrock →
 
 **If you already did the Pipecat edition of this workshop, note what does *not* carry over:** `AWS_BEARER_TOKEN_BEDROCK` is a botocore convenience, and there's no botocore here. Deepgram takes an access key and secret, or STS credentials, and nothing else.
 
-Now the code. All three TODOs sit where their code goes, and each carries its own guidance — you shouldn't need to scroll between an instruction and the line it's about.
+Now the code. All three TODOs sit where their code goes, and each carries its own guidance, so you shouldn't need to scroll between an instruction and the line it's about.
 
 **TODO 6b.1: Uncomment the imports.** Three of them, already sited at their alphabetical places in the import block (`6b.1a` through `6b.1c`).
 
@@ -74,9 +74,9 @@ Keep the guard. It's what lets the person next to you, who never got model acces
 
 And build the credentials as a dict rather than passing keyword arguments, so `session_token` can be *absent* for long-lived IAM keys. The SDK serializes any field you pass explicitly, so `session_token=None` would put a literal `null` on the wire next to `type="iam"`.
 
-**TODO 6b.3: Return the Bedrock settings.** Still inside the guard: `provider`, `endpoint`, and `prompt`. Bedrock needs the first two together — miss either and the handshake fails — and the region appears in both.
+**TODO 6b.3: Return the Bedrock settings.** Still inside the guard: `provider`, `endpoint`, and `prompt`. Bedrock needs the first two together (miss either and the handshake fails), and the region appears in both.
 
-Note what `model` is doing here: Bedrock model IDs are passed through to AWS untouched. The SDK's type hints list two Claude 3.5 IDs and then accept any string, so nothing catches a typo locally. A wrong model ID comes back from AWS at handshake time, not from your editor.
+Note what `model` is doing here: Bedrock model IDs pass through to AWS untouched. The SDK's type hints list two Claude 3.5 IDs and then accept any string, so nothing catches a typo locally. A wrong model ID comes back from AWS at handshake time, not from your editor.
 
 Once Bedrock answers, set `AWS_BEDROCK_MODEL` in `.env` to another model you enabled and listen for what a different brain does to latency and voice.
 
