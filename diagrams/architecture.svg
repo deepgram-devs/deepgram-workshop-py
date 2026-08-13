@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="760" viewBox="0 0 1240 760" role="img" aria-labelledby="title desc">
+  <title id="title">Deepgram Voice Agent Workshop architecture, with the LLM on Amazon Bedrock</title>
+  <desc id="desc">The attendee workstation runs a browser and a local Python agent. The agent opens one WebSocket to the Deepgram Voice Agent API, which handles Flux speech-to-text, orchestration, and text-to-speech. In optional Step 6b the orchestrator calls Amazon Bedrock Runtime in the attendee's own AWS account, authorized by a narrowly scoped IAM principal.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3F4B5B"/>
+    </marker>
+    <marker id="arrowSmall" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3F4B5B"/>
+    </marker>
+    <style>
+      .h1   { font: 700 20px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #101820; }
+      .h2   { font: 400 14px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #4A5568; }
+      .grp  { font: 700 12px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #3F4B5B; letter-spacing: .6px; }
+      .grpn { font: 700 12px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #232F3E; letter-spacing: .6px; }
+      .box  { font: 700 14px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #101820; }
+      .boxw { font: 700 14px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #FFFFFF; }
+      .sub  { font: 400 12px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #4A5568; }
+      .subw { font: 400 12px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #E8F6F3; }
+      .mono { font: 400 11px ui-monospace, "SF Mono", Menlo, Consolas, monospace; fill: #4A5568; }
+      .monw { font: 400 11px ui-monospace, "SF Mono", Menlo, Consolas, monospace; fill: #E8F6F3; }
+      .num  { font: 700 12px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #FFFFFF; }
+      .leg  { font: 400 12.5px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #2D3748; }
+      .legh { font: 700 12px "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #3F4B5B; letter-spacing: .6px; }
+    </style>
+  </defs>
+
+  <rect width="1240" height="760" fill="#FFFFFF"/>
+
+  <text class="h1" x="24" y="32">Deepgram Voice Agent Workshop — Python edition</text>
+  <text class="h2" x="24" y="54">Steps 1–8 as shipped, plus optional Step 6b moving the LLM to Amazon Bedrock in your own AWS account</text>
+
+  <!-- ============ Attendee workstation ============ -->
+  <rect x="24" y="100" width="300" height="440" rx="10" fill="#F7F9FB" stroke="#8792A2" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text class="grp" x="44" y="126">ATTENDEE WORKSTATION</text>
+
+  <rect x="44" y="142" width="260" height="148" rx="8" fill="#FFFFFF" stroke="#8792A2" stroke-width="1.5"/>
+  <text class="box" x="60" y="168">Web browser</text>
+  <text class="sub" x="60" y="190">Microphone and speaker</text>
+  <text class="sub" x="60" y="208">Echo cancellation</text>
+  <text class="mono" x="60" y="230">getUserMedia + AudioWorklet</text>
+  <text class="mono" x="60" y="248">linear16 @ 24 kHz</text>
+  <text class="mono" x="60" y="272">web/static/worklets.js</text>
+
+  <rect x="44" y="332" width="260" height="188" rx="8" fill="#FFFFFF" stroke="#8792A2" stroke-width="1.5"/>
+  <text class="box" x="60" y="358">Local Python agent</text>
+  <text class="sub" x="60" y="380">Python 3.13, installed by uv</text>
+  <text class="sub" x="60" y="398">FastAPI audio bridge</text>
+  <text class="sub" x="60" y="416">Your function-call code</text>
+  <text class="mono" x="60" y="440">http://127.0.0.1:8000</text>
+  <text class="mono" x="60" y="458">steps/NN-*/main.py</text>
+  <text class="mono" x="60" y="476">web/bridge.py</text>
+  <text class="mono" x="60" y="500">deepgram-sdk (Python)</text>
+
+  <line x1="174" y1="290" x2="174" y2="332" stroke="#3F4B5B" stroke-width="1.6" marker-start="url(#arrowSmall)" marker-end="url(#arrowSmall)"/>
+  <circle cx="196" cy="311" r="11" fill="#3F4B5B"/>
+  <text class="num" x="196" y="316" text-anchor="middle">1</text>
+
+  <!-- ============ Deepgram ============ -->
+  <rect x="404" y="100" width="330" height="440" rx="10" fill="#F3FBF8" stroke="#12876B" stroke-width="1.5"/>
+  <text class="grp" x="424" y="126">DEEPGRAM VOICE AGENT API</text>
+
+  <rect x="424" y="142" width="290" height="104" rx="8" fill="#FFFFFF" stroke="#12876B" stroke-width="1.5"/>
+  <text class="box" x="440" y="168">Speech-to-text</text>
+  <text class="sub" x="440" y="190">Server-side end-of-turn detection</text>
+  <text class="mono" x="440" y="214">flux-general-en</text>
+  <text class="mono" x="440" y="232">listen settings</text>
+
+  <rect x="424" y="272" width="290" height="140" rx="8" fill="#FFFFFF" stroke="#12876B" stroke-width="1.5"/>
+  <text class="box" x="440" y="298">Agent orchestrator</text>
+  <text class="sub" x="440" y="320">One socket carries listen, think,</text>
+  <text class="sub" x="440" y="338">speak, and function calls</text>
+  <text class="mono" x="440" y="362">wss://agent.deepgram.com</text>
+  <text class="mono" x="440" y="380">/v1/agent/converse</text>
+  <text class="mono" x="440" y="398">global | eu | au</text>
+
+  <rect x="424" y="438" width="290" height="82" rx="8" fill="#FFFFFF" stroke="#12876B" stroke-width="1.5"/>
+  <text class="box" x="440" y="464">Text-to-speech</text>
+  <text class="mono" x="440" y="488">flux-alexis-en</text>
+  <text class="mono" x="440" y="506">aura-2-thalia-en</text>
+
+  <line x1="569" y1="246" x2="569" y2="272" stroke="#3F4B5B" stroke-width="1.6" marker-end="url(#arrowSmall)"/>
+  <circle cx="591" cy="259" r="11" fill="#3F4B5B"/>
+  <text class="num" x="591" y="264" text-anchor="middle">3</text>
+
+  <line x1="569" y1="412" x2="569" y2="438" stroke="#3F4B5B" stroke-width="1.6" marker-end="url(#arrowSmall)"/>
+  <circle cx="591" cy="425" r="11" fill="#3F4B5B"/>
+  <text class="num" x="591" y="430" text-anchor="middle">6</text>
+
+  <!-- workstation <-> deepgram -->
+  <line x1="324" y1="316" x2="404" y2="316" stroke="#3F4B5B" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <circle cx="364" cy="294" r="11" fill="#3F4B5B"/>
+  <text class="num" x="364" y="299" text-anchor="middle">2</text>
+
+  <line x1="404" y1="396" x2="324" y2="396" stroke="#3F4B5B" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <circle cx="364" cy="418" r="11" fill="#3F4B5B"/>
+  <text class="num" x="364" y="423" text-anchor="middle">7</text>
+
+  <!-- ============ AWS Cloud ============ -->
+  <rect x="814" y="72" width="402" height="490" rx="10" fill="#FCFCFD" stroke="#232F3E" stroke-width="1.8" stroke-dasharray="7 4"/>
+  <text class="grpn" x="836" y="98">AWS CLOUD — YOUR ACCOUNT</text>
+
+  <rect x="836" y="116" width="358" height="426" rx="8" fill="#FFFFFF" stroke="#147EBA" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text class="grpn" x="856" y="142">AWS REGION</text>
+  <text class="mono" x="856" y="160">AWS_REGION, e.g. us-east-2</text>
+
+  <rect x="856" y="180" width="318" height="118" rx="8" fill="#DD344C" stroke="#B3223A" stroke-width="1.5"/>
+  <text class="boxw" x="872" y="206">AWS IAM</text>
+  <text class="subw" x="872" y="228">Scoped user or STS session</text>
+  <text class="monw" x="872" y="252">bedrock:InvokeModelWithResponseStream</text>
+  <text class="monw" x="872" y="270">on one model ARN, nothing more</text>
+
+  <rect x="856" y="342" width="318" height="180" rx="8" fill="#01A88D" stroke="#01806B" stroke-width="1.5"/>
+  <text class="boxw" x="872" y="368">Amazon Bedrock Runtime</text>
+  <text class="subw" x="872" y="390">Your model, your bill</text>
+  <text class="monw" x="872" y="414">bedrock-runtime.{region}.amazonaws.com</text>
+  <text class="monw" x="872" y="432">InvokeModelWithResponseStream</text>
+  <text class="monw" x="872" y="456">zai.glm-4.7-flash (default)</text>
+  <text class="subw" x="872" y="482">Model access is granted per model</text>
+  <text class="subw" x="872" y="500">and per Region, before the workshop</text>
+
+  <line x1="1015" y1="298" x2="1015" y2="342" stroke="#3F4B5B" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowSmall)"/>
+  <text class="sub" x="1027" y="325">authorizes</text>
+
+  <!-- deepgram <-> bedrock -->
+  <line x1="714" y1="336" x2="856" y2="336" stroke="#3F4B5B" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <circle cx="785" cy="314" r="11" fill="#3F4B5B"/>
+  <text class="num" x="785" y="319" text-anchor="middle">4</text>
+
+  <line x1="856" y1="386" x2="714" y2="386" stroke="#3F4B5B" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <circle cx="785" cy="408" r="11" fill="#3F4B5B"/>
+  <text class="num" x="785" y="413" text-anchor="middle">5</text>
+
+  <!-- ============ Legend ============ -->
+  <line x1="24" y1="586" x2="1216" y2="586" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text class="legh" x="24" y="612">REQUEST FLOW</text>
+
+  <circle cx="34" cy="636" r="10" fill="#3F4B5B"/><text class="num" x="34" y="641" text-anchor="middle">1</text>
+  <text class="leg" x="54" y="641">Browser captures microphone audio and streams it to the local bridge over 127.0.0.1.</text>
+
+  <circle cx="34" cy="664" r="10" fill="#3F4B5B"/><text class="num" x="34" y="669" text-anchor="middle">2</text>
+  <text class="leg" x="54" y="669">The Python agent forwards that audio to Deepgram on a single authenticated WebSocket.</text>
+
+  <circle cx="34" cy="692" r="10" fill="#3F4B5B"/><text class="num" x="34" y="697" text-anchor="middle">3</text>
+  <text class="leg" x="54" y="697">Flux transcribes and decides the turn has ended — no client-side voice activity detection.</text>
+
+  <circle cx="34" cy="720" r="10" fill="#3F4B5B"/><text class="num" x="34" y="725" text-anchor="middle">4</text>
+  <text class="leg" x="54" y="725">Steps 1–8: Deepgram brokers the LLM. Step 6b: Deepgram calls Bedrock as you.</text>
+
+  <circle cx="646" cy="636" r="10" fill="#3F4B5B"/><text class="num" x="646" y="641" text-anchor="middle">5</text>
+  <text class="leg" x="666" y="641">The model streams tokens back to the orchestrator.</text>
+
+  <circle cx="646" cy="664" r="10" fill="#3F4B5B"/><text class="num" x="646" y="669" text-anchor="middle">6</text>
+  <text class="leg" x="666" y="669">Text-to-speech synthesizes the reply as it arrives.</text>
+
+  <circle cx="646" cy="692" r="10" fill="#3F4B5B"/><text class="num" x="646" y="697" text-anchor="middle">7</text>
+  <text class="leg" x="666" y="697">Audio returns on the same socket and plays in the browser;</text>
+  <text class="leg" x="666" y="715">a barge-in clears the queued audio immediately.</text>
+
+  <text class="mono" x="666" y="741">No AWS infrastructure is provisioned by this workshop.</text>
+</svg>
