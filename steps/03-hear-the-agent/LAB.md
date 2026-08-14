@@ -1,4 +1,4 @@
-# Step 3 — Hear the agent
+# Step 3: Hear the agent
 
 **Goal:** Route the agent's Flux TTS audio to your speaker and hear the greeting out loud.
 
@@ -93,4 +93,4 @@ In `PlaybackProcessor.process`, change the underrun fill from `0` to something a
 
 You can hear the agent. Now close the loop and let it hear you.
 
-**Next:** [Step 4 — Talk to the agent](../04-talk-to-the-agent/LAB.md)
+**Next:** [Step 4: Talk to the agent](../04-talk-to-the-agent/LAB.md)

@@ -43,7 +43,7 @@ STANDALONE = {"01-setup"}
 # ship a LAB.md like everything else, but they are not links in the answer-key
 # chain: 07 is 06's answer key, not 06b's. A detour carries its own answer key
 # in its LAB.md, because nothing downstream can be it.
-OPTIONAL = {"06b-bring-your-own-llm"}
+OPTIONAL = {"06b-bring-your-own-llm", "07b-healthcare"}
 
 
 def step_dirs() -> list[Path]:

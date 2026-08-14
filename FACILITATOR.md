@@ -113,17 +113,21 @@ Times assume a 3-hour slot with one break. The **⏸** rows are the sync points 
 | 1:40 | - | **Break, 10 min** | Use it to unstick stragglers |
 | 1:50 | **5: Barge-in** | Interruption | **⏸** Everyone experiences the bug *before* fixing it |
 | 2:15 | **6: Make it yours** | Persona and voice | **⏸** Go around the room and demo a few |
-| 2:35 | **7: Function calling** | Tools | **⏸** Sketch a function for their own use case first |
+| 2:35 | **7: Function calling** | Tools, via a phone banking agent | **⏸** Sketch a function for their own use case first |
 | 3:05 | **8: Optimization** | EOT thresholds, latency | Pace-recovery step. Stragglers catch up here, and it sheds time cleanly |
 | 3:20 | **Wrap** | `steps/99-final/README.md`, Q&A | Point at Discord and the docs |
 
-**Step 6b is not in the run of show, and that's deliberate.** It moves the LLM to Amazon Bedrock in the attendee's own AWS account, which needs Bedrock model access granted per model *and* per region, which for a fresh account is a day or two of calendar time, not a day or two of work. Mention it in one sentence when you finish Step 6, as a take-home, and move on.
+**Neither 6b nor 7b is in the run of show, and that's deliberate.**
+
+**Step 6b** is the expensive one. It moves the LLM to Amazon Bedrock in the attendee's own AWS account, which needs Bedrock model access granted per model *and* per region, which for a fresh account is a day or two of calendar time, not a day or two of work. Mention it in one sentence when you finish Step 6, as a take-home, and move on.
 
 Run it live only if you know the room already has AWS: an enterprise team, an AWS-hosted event. In that case it slots in after Step 6 and costs about 15 minutes, and you should say so in the pre-event email so people arrive with model access approved. Everything it teaches (`think.endpoint`, brokered vs bring-your-own providers) is in its `LAB.md`, so it reads fine unattended.
 
+**Step 7b** is the cheap one. It's a second vertical -- a clinic scheduling agent -- and unlike 6b it needs nothing beyond the Deepgram key everyone already has. It teaches the two things banking doesn't: `keyterms` (heard rather than explained, by running once with the list empty) and filtering the function payload so the agent physically cannot repeat a date of birth. Fifteen minutes if you run it live, and it reads fine unattended as a take-home. If the room is a healthcare room, swap it *for* Step 7's exercises rather than adding it on top.
+
 **If you're running long.** Cut Step 8 and Step 7's exercises. Both work fine as take-home, and Step 8 is deliberately last so it can go. Never cut Step 5; it's the step people remember.
 
-**If you're running short.** Step 8's "Going further" (`eager_eot_threshold`) and Step 7's second function absorb time well.
+**If you're running short.** Step 8's "Going further" (`eager_eot_threshold`), Step 7's `transfer_funds` exercise, and Step 7b all absorb time well, in that order of effort.
 
 ## The five failures you will actually hit
 
@@ -170,6 +174,8 @@ The `LAB.md` files pose these; here are the answers, for when you ask the room.
 **Step 6b.** Deepgram brokers OpenAI, so a model name is the whole configuration. It doesn't broker Bedrock: it makes the call *as you*, which needs credentials to make it with (`provider.credentials`) and an address to make it to (`think.endpoint`).
 
 **Step 7.** Setting `endpoint` moves execution to Deepgram; omitting it keeps the function client-side.
+
+**Step 7b.** Because the prompt is a request and the payload is a guarantee. Prose asking the model not to repeat a phone number can be talked around; a payload that never carried the phone number cannot.
 
 **Step 8.** Raise `eot_threshold`. It demands more confidence before Flux calls the turn over.
 

@@ -1,7 +1,8 @@
 """Step 8 - Optimization.
 
-Runs exactly as Step 7 left it: a complete voice agent that listens on Flux,
-holds a conversation, yields the floor when interrupted, and calls your Python.
+Runs exactly as Step 7 left it: a complete phone banking agent that listens on
+Flux, holds a conversation, yields the floor when interrupted, and answers from
+your data by calling your Python.
 
 Nothing is missing. What is left is how it *feels*, and that comes down to two
 numbers that have been sitting in this file since Step 2 -- EOT_THRESHOLD and
@@ -20,8 +21,6 @@ Run it with:  uv run steps/08-optimize/main.py
 """
 
 import json
-from datetime import datetime
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from deepgram.agent.v1.types import (
     AgentV1SendFunctionCallResponse,
@@ -76,36 +75,115 @@ EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people 
 EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
 
 
-def get_current_time(timezone: str = "UTC") -> str:
-    """Return the current date and time in the named IANA timezone.
+# Words this agent hears all day. Flux biases recognition toward them, which is
+# the cheapest accuracy fix available for a domain-specific agent.
+KEYTERMS = ["Contoso Bank", "routing number", "balance", "transaction"]
 
-    The agent reads the return value aloud, so it is phrased as a sentence
-    rather than a data structure.
+# SYNTHETIC account data, keyed by the last four digits of the account number.
+# In production the handlers below call your core-banking API, server-side and
+# behind your own auth. The agent never sees this code -- only the value you
+# return, which it then reads to the customer.
+ACCOUNTS = {
+    "4821": {
+        "balance": 1250.40,
+        "transactions": [
+            {"date": "2026-03-03", "description": "Whole Foods Market", "amount": -84.12},
+            {"date": "2026-03-02", "description": "Payroll deposit, Contoso Inc", "amount": 2400.00},
+            {"date": "2026-03-01", "description": "Con Edison, utilities", "amount": -132.55},
+            {"date": "2026-02-27", "description": "Delta Air Lines", "amount": -412.30},
+        ],
+    },
+    "9007": {
+        "balance": 58.19,
+        "transactions": [
+            {"date": "2026-03-03", "description": "Starbucks", "amount": -6.75},
+            {"date": "2026-03-01", "description": "Venmo from A. Rivera", "amount": 40.00},
+            {"date": "2026-02-28", "description": "Spotify", "amount": -11.99},
+        ],
+    },
+}
+
+
+def usd(amount: float) -> str:
+    """Format a dollar amount for the ear rather than for a screen.
+
+    Formatting here instead of in the prompt is deliberate: hand the LLM
+    "$1,250.40" and it reads it back correctly, hand it 1250.4 and you spend
+    prompt tokens teaching it to say "dollars".
 
     Args:
-        timezone: IANA timezone name, for example "America/New_York". Falls
-            back to UTC when the name is not recognized -- the LLM invents
-            plausible-but-wrong timezone strings often enough that raising
-            here would end otherwise fine conversations.
+        amount: A signed dollar amount. Debits are negative.
 
     Returns:
-        A sentence describing the current local time in that timezone.
+        The amount as a currency string, for example "$1,250.40" or "-$84.12".
+        The sign goes outside the symbol -- "$-84.12" is not something a person
+        would say.
     """
-    try:
-        zone = ZoneInfo(timezone)
-    except (ZoneInfoNotFoundError, ValueError):
-        timezone, zone = "UTC", ZoneInfo("UTC")
+    sign = "-" if amount < 0 else ""
+    return f"{sign}${abs(amount):,.2f}"
 
-    now = datetime.now(zone)
-    # strftime's %-I (no leading zero) is a glibc/BSD extension that fails on
-    # Windows, so strip the zero by hand instead.
-    clock = now.strftime("%I:%M %p").lstrip("0")
-    return f"It is {clock} on {now.strftime('%A, %B %d')} in {timezone}."
+
+def lookup_balance(account_last_four: str) -> dict:
+    """Return the current balance for one account.
+
+    Args:
+        account_last_four: The last 4 digits of the account number. The LLM
+            sometimes passes the full number or digits with spaces in them, so
+            only the last four are used.
+
+    Returns:
+        The balance and the date it is current as of, or a "not found" result.
+        A miss returns rather than raises: the agent turns a returned message
+        into a sentence, where an exception leaves the caller in silence.
+    """
+    account = ACCOUNTS.get(str(account_last_four)[-4:])
+    if account is None:
+        return {"found": False, "message": "No account found for those digits."}
+
+    return {
+        "found": True,
+        "account_last_four": account_last_four,
+        "balance": usd(account["balance"]),
+        "as_of": "2026-03-03",
+    }
+
+
+def list_recent_transactions(account_last_four: str, limit: int = 3) -> dict:
+    """Return the most recent transactions on one account.
+
+    Args:
+        account_last_four: The last 4 digits of the account number.
+        limit: How many transactions to return, most recent first.
+
+    Returns:
+        The transactions with amounts pre-formatted as currency, or a "not
+        found" result.
+    """
+    account = ACCOUNTS.get(str(account_last_four)[-4:])
+    if account is None:
+        return {"found": False, "message": "No account found for those digits."}
+
+    return {
+        "found": True,
+        "account_last_four": account_last_four,
+        "transactions": [
+            {
+                "date": transaction["date"],
+                "description": transaction["description"],
+                "amount": usd(transaction["amount"]),
+                "type": "debit" if transaction["amount"] < 0 else "credit",
+            }
+            for transaction in account["transactions"][:limit]
+        ],
+    }
 
 
 # Maps the function names advertised in FUNCTIONS to the Python that runs them.
+# These two structures never reference each other -- the name string is the
+# only thing joining them.
 FUNCTION_HANDLERS = {
-    "get_current_time": get_current_time,
+    "lookup_balance": lookup_balance,
+    "list_recent_transactions": list_recent_transactions,
 }
 
 # What the agent is told it can call. This is advertising only: the LLM decides
@@ -115,24 +193,44 @@ FUNCTION_HANDLERS = {
 # FunctionCallResponse rather than calling an HTTP endpoint itself.
 FUNCTIONS = [
     ThinkSettingsV1FunctionsItem(
-        name="get_current_time",
+        name="lookup_balance",
         description=(
-            "Get the current date and time in a given IANA timezone. Use this "
-            "whenever the user asks what time it is or what today's date is."
+            "Get the current balance for a customer account by its last four "
+            "digits. Use this whenever the customer asks how much money they "
+            "have."
         ),
         # A JSON Schema object, exactly as the LLM's tool-calling API expects.
         parameters={
             "type": "object",
             "properties": {
-                "timezone": {
+                "account_last_four": {
                     "type": "string",
-                    "description": (
-                        "IANA timezone name, for example America/New_York or "
-                        "Europe/London. Ask the user if you do not know it."
-                    ),
+                    "description": "The last 4 digits of the account number.",
                 },
             },
-            "required": ["timezone"],
+            "required": ["account_last_four"],
+        },
+    ),
+    ThinkSettingsV1FunctionsItem(
+        name="list_recent_transactions",
+        description=(
+            "List the most recent transactions on an account, by its last four "
+            "digits. Use this for questions about spending, charges, deposits, "
+            "or recent activity."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "account_last_four": {
+                    "type": "string",
+                    "description": "The last 4 digits of the account number.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "How many transactions to return. Defaults to 3.",
+                },
+            },
+            "required": ["account_last_four"],
         },
     ),
 ]
@@ -154,22 +252,37 @@ SETTINGS = AgentV1Settings(
                 model="flux-general-en",  # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
                 eot_threshold=EOT_THRESHOLD,  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
                 eot_timeout_ms=EOT_TIMEOUT_MS,  # Valid 500-60000. Hard ceiling: end the turn after this much silence no matter what the score says.
+                keyterms=KEYTERMS,  # Bias recognition toward the words this domain repeats.
             ),
         ),
         think=ThinkSettingsV1(
             provider=ThinkSettingsV1Provider_OpenAi(
                 type="open_ai",
                 model="gpt-4o-mini",
-                temperature=0.7,
+                temperature=0.3,  # A banking agent should say the same thing twice when asked the same thing twice.
             ),
             # The prompt is prepended to every user turn before it reaches the
             # LLM. It is the agent's standing instructions -- personality, job,
             # and boundaries. Keep it short: every token here is re-sent on
             # every turn, and long prompts slow the first reply.
             prompt=(
-                "You are a helpful AI assistant. Keep your responses brief. "
-                "You are speaking out loud, so never use markdown, bullet "
-                "points, or emoji."
+                "You are a phone banking assistant for Contoso Bank. Be brief "
+                "and clear -- the customer is listening, not reading. Never "
+                "use markdown, bullet points, or emoji.\n"
+                "\n"
+                "NUMERIC DISCIPLINE:\n"
+                "- When the customer gives you account digits, read them back "
+                "one digit at a time to confirm before acting.\n"
+                "- State money amounts in full ('one thousand two hundred "
+                "fifty dollars and forty cents') and dates clearly ('March "
+                "3rd, 2026').\n"
+                "- NEVER invent a balance, a transaction, or any other "
+                "number. If you do not have it, call a function or say you "
+                "cannot find it.\n"
+                "\n"
+                "Use lookup_balance for balances and list_recent_transactions "
+                "for recent activity. Ask for the last four digits of the "
+                "account first."
             ),
             functions=FUNCTIONS,
         ),
@@ -185,7 +298,11 @@ SETTINGS = AgentV1Settings(
         # The agent's first utterance, spoken as soon as settings are applied.
         # It is added to the conversation history, so the LLM knows it already
         # said this and will not repeat itself on the first real turn.
-        greeting="Hello! I'm a Deepgram voice agent. What would you like to talk about?",
+        greeting=(
+            "Thanks for calling Contoso Bank. For your security I can only "
+            "look things up by the last four digits of your account. How can "
+            "I help?"
+        ),
     ),
 )
 
@@ -218,7 +335,8 @@ def handle_function_call(agent: AgentHandle, message: object) -> None:
             content = f"No function named '{name}' is available."
         else:
             try:
-                content = handler(**json.loads(arguments))
+                # content goes over the wire as a string; the handlers return dicts.
+                content = json.dumps(handler(**json.loads(arguments)))
             except Exception as error:  # noqa: BLE001 -- see the docstring above
                 content = f"{name} failed: {error}"
 

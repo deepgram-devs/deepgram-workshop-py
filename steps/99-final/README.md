@@ -7,17 +7,19 @@ uv run steps/99-final/main.py            # browser handles the audio
 uv run steps/99-final/main.py --local    # system mic and speaker, via PortAudio
 ```
 
-Use it as the reference implementation when a step of yours doesn't behave, or as the starting point for whatever you build next.
+It runs as the workshop's worked example: a phone banking assistant for Contoso Bank that looks up balances and reads back transactions from synthetic account data. Use it as the reference implementation when a step of yours doesn't behave, or as the starting point for whatever you build next.
 
 ## What's in here
 
-Roughly 300 lines, most of them comments, doing seven things:
+Roughly 400 lines, most of them comments, doing eight things:
 
 | Concern | Where it lives |
 |---|---|
 | Audio format contract | `SAMPLE_RATE`; the browser reads the rest back from `SETTINGS` |
 | Turn detection | `EOT_THRESHOLD`, `EOT_TIMEOUT_MS`, wired into the listen provider |
+| Domain vocabulary | `KEYTERMS`, passed to the listen provider |
 | Agent definition | `SETTINGS`: listen, think, speak, greeting |
+| Mock data and lookups | `ACCOUNTS`, `usd`, `lookup_balance`, `list_recent_transactions` |
 | Client-side functions | `FUNCTIONS`, `FUNCTION_HANDLERS`, `handle_function_call` |
 | Inbound events | `on_message` |
 | Barge-in | `player.clear()` in the `UserStartedSpeaking` branch |
@@ -35,7 +37,9 @@ The threading rule the whole design rests on: `on_message` runs on the SDK's rec
 
 **Eager end-of-turn.** Add `eager_eot_threshold` (0.3 to 0.9, at or below `eot_threshold`) to start the LLM on a probable turn end and discard the work if the user keeps talking. Lower latency, more LLM calls.
 
-**Keyterms.** Pass `keyterms` to the listen provider to bias recognition toward product names, SKUs, or jargon Flux would otherwise mishear. This is usually the highest-leverage accuracy fix for a domain-specific agent.
+**Your own vertical.** This agent is a phone banking assistant, and the three things that make it one are all replaceable in a sitting: `KEYTERMS`, the prompt, and the two functions. Swap them and you have a different specialist. [Step 7b](../07b-healthcare/LAB.md) does exactly that, to a clinic scheduling agent, and is worth reading for the one habit banking doesn't teach — returning only what the agent may say aloud, so the payload enforces what the prompt merely requests.
+
+**Keyterms.** `KEYTERMS` is already wired into the listen provider. Widen it for your own product names, SKUs, or jargon Flux would otherwise mishear — usually the highest-leverage accuracy fix for a domain-specific agent, and one line of configuration.
 
 **Mid-conversation updates.** The socket accepts more than settings and media. `send_update_prompt` changes instructions without reconnecting, `send_inject_agent_message` makes the agent say something unprompted, and `send_inject_user_message` feeds it text as though the user spoke it, which also makes function calling testable without a microphone.
 

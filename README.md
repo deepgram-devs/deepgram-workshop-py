@@ -78,13 +78,16 @@ Inside a TODO block, `#:` marks the instructions. Everything else is code, comme
 | [5 — Barge-in](steps/05-barge-in/LAB.md) | Interrupting the agent mid-sentence | `uv run steps/05-barge-in/main.py` | 25 min |
 | [6 — Make it yours](steps/06-make-it-yours/LAB.md) | Prompt, persona, voice, model | `uv run steps/06-make-it-yours/main.py` | 20 min |
 | [6b — Bring your own LLM](steps/06b-bring-your-own-llm/LAB.md) *(optional)* | The brain on Amazon Bedrock, in your AWS account | `uv run steps/06b-bring-your-own-llm/main.py` | 15 min |
-| [7 — Function calling](steps/07-function-calling/LAB.md) | The agent runs your Python | `uv run steps/07-function-calling/main.py` | 35 min |
+| [7 — Function calling](steps/07-function-calling/LAB.md) | A phone banking agent that answers from your data | `uv run steps/07-function-calling/main.py` | 35 min |
+| [7b — Healthcare](steps/07b-healthcare/LAB.md) *(optional)* | A second vertical: custom vocabulary and PII guardrails | `uv run steps/07b-healthcare/main.py` | 15 min |
 | [8 — Optimization](steps/08-optimize/LAB.md) | End-of-turn thresholds and latency | `uv run steps/08-optimize/main.py` | 20 min |
 | [Finished](steps/99-final/README.md) | The complete reference implementation | `uv run steps/99-final/main.py` | — |
 
 Running behind? Steps 1–5 are the core — finish those and you have a working voice agent. Step 8 is dials rather than code and makes the natural take-home. And because every folder is complete, skipping ahead costs you the typing, not the workshop.
 
-Step 6b is a detour, not a link in the chain: it's the only step that needs a credential beyond your Deepgram key — AWS access with Bedrock model access granted, which usually takes longer to obtain than the step takes to do. Skip it and Step 7 continues from Step 6 exactly as it would have.
+Steps 6b and 7b are detours, not links in the chain. Skip either and the next numbered step continues exactly as it would have.
+
+Step 6b is the only step needing a credential beyond your Deepgram key — AWS access with Bedrock model access granted, which usually takes longer to obtain than the step takes to do. Step 7b needs nothing extra: it's a second vertical, a clinic scheduling agent, added because the two things it teaches — custom vocabulary and holding back data the agent must never say aloud — don't come up in banking and matter in most real deployments.
 
 Each lab has **Check yourself** questions to test your understanding as you go, and **⏸ Pause** markers where a live workshop regroups.
 
@@ -94,7 +97,8 @@ Each lab has **Check yourself** questions to test your understanding as you go, 
 - Why Flux does turn detection server-side, and what that removes from your client
 - Streaming microphone audio without blocking the thread that plays the reply
 - Clearing queued playback the instant a user interrupts — the difference between a demo and something people will use
-- Wiring client-side function calls into a live conversation
+- Wiring client-side function calls into a live conversation, so the agent answers from your data rather than its own imagination
+- Turning a general agent into a domain specialist: keyterms, guardrail prompts, and payloads that carry only what the agent may say aloud
 - Trading turn-detection latency against accuracy, and measuring it honestly
 
 The audio plumbing itself lives in [web/](web/) — a small FastAPI bridge and two AudioWorklets that every step shares and you read rather than write. [web/README.md](web/README.md) explains what it does and the three things about it that are easy to get wrong.

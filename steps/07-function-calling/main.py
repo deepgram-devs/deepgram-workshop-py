@@ -2,9 +2,12 @@
 
 Runs exactly as Step 6 left it: a voice agent with your persona and voice.
 
-Your job in this step is to let the agent run Python. You will advertise a
-function in the agent's settings, handle the FunctionCallRequest the agent
-sends when the LLM decides to use it, and send the result back.
+Your job in this step is to turn it into a specialist. You will give it a
+domain -- phone banking for Contoso Bank -- and then let it run Python, because
+a banking agent that cannot look up a balance is just a chatbot with opinions
+about money. You will advertise two functions in the agent's settings, handle
+the FunctionCallRequest the agent sends when the LLM decides to use one, and
+send the result back.
 
 Look for the "TODO (Step 7.x)" blocks below and work through them in order.
 Inside them, "#:" marks the instructions and everything else is code, commented
@@ -15,13 +18,12 @@ Run it with:  uv run steps/07-function-calling/main.py
 """
 
 #: ---- TODO (Step 7.1): Imports --------------------------------------------
-#: You need five more imports for this step. Add them to the groups below,
+#: You need three more imports for this step. Add them to the groups below,
 #: keeping each group alphabetical:
 #:
 #:   standard library:
-#:     import json                                 (parse the LLM's arguments)
-#:     from datetime import datetime               (the function's actual work)
-#:     from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+#:     import json                                 (parse the LLM's arguments,
+#:                                                  and serialize your results)
 #:
 #:   third party:
 #:     AgentV1SendFunctionCallResponse   -> into the deepgram.agent.v1.types
@@ -61,51 +63,117 @@ SAMPLE_RATE = 24000  # Deepgram's recommended sample rate for voice agents. For 
 EOT_THRESHOLD = 0.7  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
 EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this much silence, whatever the score says.
 
-#: ---- TODO (Step 7.2): Write the function ---------------------------------
-#: Write the Python the agent will call. Signature:
+# Words this agent hears all day. Flux biases recognition toward them, which is
+# the cheapest accuracy fix available for a domain-specific agent.
+KEYTERMS = ["Contoso Bank", "routing number", "balance", "transaction"]
+
+#: ---- TODO (Step 7.2): Write the functions --------------------------------
+#: First, the data the agent will answer from. SYNTHETIC -- in production these
+#: bodies call your core-banking API, server-side, behind your own auth. Two
+#: accounts, keyed by their last four digits:
 #:
-# def get_current_time(timezone: str = "UTC") -> str:
+# ACCOUNTS = {
+#     "4821": {
+#         "balance": 1250.40,
+#         "transactions": [
+#             {"date": "2026-03-03", "description": "Whole Foods Market", "amount": -84.12},
+#             {"date": "2026-03-02", "description": "Payroll deposit, Contoso Inc", "amount": 2400.00},
+#             {"date": "2026-03-01", "description": "Con Edison, utilities", "amount": -132.55},
+#             {"date": "2026-02-27", "description": "Delta Air Lines", "amount": -412.30},
+#         ],
+#     },
+#     "9007": {
+#         "balance": 58.19,
+#         "transactions": [
+#             {"date": "2026-03-03", "description": "Starbucks", "amount": -6.75},
+#             {"date": "2026-03-01", "description": "Venmo from A. Rivera", "amount": 40.00},
+#             {"date": "2026-02-28", "description": "Spotify", "amount": -11.99},
+#         ],
+#     },
+# }
 #:
-#: It should build a ZoneInfo from `timezone`, falling back to UTC inside a
-#: try/except (ZoneInfoNotFoundError, ValueError) -- the LLM invents
-#: plausible-but-wrong timezone names often enough that raising would end
-#: otherwise fine conversations.
 #:
-#: Return a *sentence*, not a data structure. Whatever you return is fed back to
-#: the LLM and read aloud, so "It is 2:15 PM on Tuesday, August 05 in
-#: America/New_York." works far better than {"hour": 14, "minute": 15}.
+#: Then a formatting helper. Format for the ear here, not in the prompt -- hand
+#: the LLM "$1,250.40" and it reads it back correctly, hand it 1250.4 and you
+#: will spend prompt tokens teaching it to say "dollars".
 #:
-#: Note: strftime's %-I (hour with no leading zero) is a glibc/BSD extension and
-#: fails on Windows. Use "%I:%M %p" and .lstrip("0") instead.
+# def usd(amount: float) -> str:
 #:
-#: Then map the advertised name to the callable:
+#: Debits are negative, and the sign belongs outside the symbol: "-$84.12", not
+#: "$-84.12", which is not something a person would say out loud.
 #:
-# FUNCTION_HANDLERS = {"get_current_time": get_current_time}
+#: Then the two handlers. Both take the last four digits, both return a dict:
+#:
+# def lookup_balance(account_last_four: str) -> dict:
+# def list_recent_transactions(account_last_four: str, limit: int = 3) -> dict:
+#:
+#: Look the account up with  ACCOUNTS.get(str(account_last_four)[-4:])  -- the
+#: LLM may hand you the full number, or the digits with spaces in them.
+#:
+#: A miss RETURNS, it does not raise:
+#:
+#     {"found": False, "message": "No account found for those digits."}
+#:
+#: The agent turns that into a sentence. An exception leaves the caller
+#: listening to silence.
+#:
+#: Then map the advertised names to the callables:
+#:
+# FUNCTION_HANDLERS = {
+#     "lookup_balance": lookup_balance,
+#     "list_recent_transactions": list_recent_transactions,
+# }
 #:
 #: Docstrings are required here -- ruff is configured with pydocstyle (google).
 #: --------------------------------------------------------------------------
 
-#: ---- TODO (Step 7.3): Advertise the function -----------------------------
+#: ---- TODO (Step 7.3): Advertise the functions ----------------------------
 #: Build the list the agent is told about. This is advertising only: the LLM
 #: decides *whether* to call, your code decides *what happens* when it does.
 #:
+#: These declarations and the handlers above never reference each other. The
+#: name string is the only thing joining them, which is worth remembering the
+#: first time you rename one and not the other.
+#:
 # FUNCTIONS = [
 #     ThinkSettingsV1FunctionsItem(
-#         name="get_current_time",
+#         name="lookup_balance",
 #         description=(
-#             "Get the current date and time in a given IANA timezone. Use "
-#             "this whenever the user asks what time it is or what today's "
-#             "date is."
+#             "Get the current balance for a customer account by its last "
+#             "four digits. Use this whenever the customer asks how much "
+#             "money they have."
 #         ),
 #         parameters={  # plain JSON Schema, as the LLM's tool API expects
 #             "type": "object",
 #             "properties": {
-#                 "timezone": {
+#                 "account_last_four": {
 #                     "type": "string",
-#                     "description": "IANA timezone name, e.g. Europe/London.",
+#                     "description": "The last 4 digits of the account number.",
 #                 },
 #             },
-#             "required": ["timezone"],
+#             "required": ["account_last_four"],
+#         },
+#     ),
+#     ThinkSettingsV1FunctionsItem(
+#         name="list_recent_transactions",
+#         description=(
+#             "List the most recent transactions on an account, by its last "
+#             "four digits. Use this for questions about spending, charges, "
+#             "deposits, or recent activity."
+#         ),
+#         parameters={
+#             "type": "object",
+#             "properties": {
+#                 "account_last_four": {
+#                     "type": "string",
+#                     "description": "The last 4 digits of the account number.",
+#                 },
+#                 "limit": {
+#                     "type": "integer",
+#                     "description": "How many transactions to return. Defaults to 3.",
+#                 },
+#             },
+#             "required": ["account_last_four"],
 #         },
 #     ),
 # ]
@@ -113,9 +181,9 @@ EOT_TIMEOUT_MS = 5000  # Valid 500-60000. Hard ceiling: end the turn after this 
 #: The description is the prompt. It is the only thing the LLM reads when
 #: deciding to call, so spell out *when* to use it, not just what it does.
 #:
-#: Leaving "endpoint" unset is what marks this function client-side -- that is
-#: why Deepgram sends the call down the socket to you instead of calling an HTTP
-#: endpoint itself.
+#: Note what is missing: "endpoint". Leaving it unset is what marks a function
+#: client-side -- that is why Deepgram sends the call down the socket to you
+#: instead of calling an HTTP endpoint itself.
 #: --------------------------------------------------------------------------
 
 SETTINGS = AgentV1Settings(
@@ -135,24 +203,57 @@ SETTINGS = AgentV1Settings(
                 model="flux-general-en",  # Deepgram's general-purpose English voice agent model. Use flux-general-multi for auto-detection. See: https://developers.deepgram.com/docs/flux/language-prompting
                 eot_threshold=EOT_THRESHOLD,  # Valid 0.5-0.9. Raise it to stop the agent cutting people off mid-thought, lower it for snappier replies at the cost of false turn ends.
                 eot_timeout_ms=EOT_TIMEOUT_MS,  # Valid 500-60000. Hard ceiling: end the turn after this much silence no matter what the score says.
+                #: ---- TODO (Step 7.4a): Teach it the vocabulary -----------
+                #: Add:  keyterms=KEYTERMS,
+                #: ----------------------------------------------------------
             ),
         ),
         think=ThinkSettingsV1(
             provider=ThinkSettingsV1Provider_OpenAi(
                 type="open_ai",
                 model="gpt-4o-mini",
+                #: ---- TODO (Step 7.4b): Cool it down ------------------------
+                #: Drop temperature to 0.3. A banking agent should say the same
+                #: thing twice when asked the same thing twice.
+                #: ------------------------------------------------------------
                 temperature=0.7,
             ),
             # The prompt is prepended to every user turn before it reaches the
             # LLM. It is the agent's standing instructions -- personality, job,
             # and boundaries. Keep it short: every token here is re-sent on
             # every turn, and long prompts slow the first reply.
+            #: ---- TODO (Step 7.4c): Give it the job ---------------------
+            #: Replace the neutral prompt below with the banking one. The
+            #: NUMERIC DISCIPLINE block is the part that matters: it is what
+            #: stops the agent inventing a balance, and it does that before
+            #: you have written a single line of function-calling code.
+            #:
+            # prompt=(
+            #     "You are a phone banking assistant for Contoso Bank. Be brief "
+            #     "and clear -- the customer is listening, not reading. Never "
+            #     "use markdown, bullet points, or emoji.\n"
+            #     "\n"
+            #     "NUMERIC DISCIPLINE:\n"
+            #     "- When the customer gives you account digits, read them back "
+            #     "one digit at a time to confirm before acting.\n"
+            #     "- State money amounts in full ('one thousand two hundred "
+            #     "fifty dollars and forty cents') and dates clearly ('March "
+            #     "3rd, 2026').\n"
+            #     "- NEVER invent a balance, a transaction, or any other "
+            #     "number. If you do not have it, call a function or say you "
+            #     "cannot find it.\n"
+            #     "\n"
+            #     "Use lookup_balance for balances and list_recent_transactions "
+            #     "for recent activity. Ask for the last four digits of the "
+            #     "account first."
+            # ),
+            #: ------------------------------------------------------------
             prompt=(
                 "You are a helpful AI assistant. Keep your responses brief. "
                 "You are speaking out loud, so never use markdown, bullet "
                 "points, or emoji."
             ),
-            #: ---- TODO (Step 7.4): Attach the functions -------------------
+            #: ---- TODO (Step 7.4d): Attach the functions ------------------
             #: Add:  functions=FUNCTIONS,
             #: --------------------------------------------------------------
         ),
@@ -168,6 +269,16 @@ SETTINGS = AgentV1Settings(
         # The agent's first utterance, spoken as soon as settings are applied.
         # It is added to the conversation history, so the LLM knows it already
         # said this and will not repeat itself on the first real turn.
+        #: ---- TODO (Step 7.4e): Open the call -------------------------------
+        #: Replace the greeting below. This one sets the security expectation
+        #: before the customer volunteers a full account number out loud:
+        #:
+        # greeting=(
+        #     "Thanks for calling Contoso Bank. For your security I can only "
+        #     "look things up by the last four digits of your account. How can "
+        #     "I help?"
+        # ),
+        #: --------------------------------------------------------------------
         greeting="Hello! I'm a Deepgram voice agent. What would you like to talk about?",
     ),
 )
@@ -182,7 +293,10 @@ SETTINGS = AgentV1Settings(
 #:
 #:   1. Look the name up in FUNCTION_HANDLERS.
 #:   2. Call it with  handler(**json.loads(arguments))
-#:   3. Send the result back:
+#:   3. Serialize the result:  content = json.dumps(result)
+#:      `content` goes over the wire as a string, and your handlers return
+#:      dicts. This is the line that joins them.
+#:   4. Send it back:
 #:
 #:        agent.send_function_call_response(
 #:            AgentV1SendFunctionCallResponse(id=call.id, name=name, content=content),
