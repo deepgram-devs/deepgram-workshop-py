@@ -26,7 +26,7 @@ It prints which brain it's using before it opens the browser:
 
 That's the same agent Step 6 finished with (neutral prompt, neutral voice), and it will keep working exactly like that until you put AWS credentials in `.env`.
 
-## The mental model
+## How it works
 
 Every step so far has needed one credential. `.env` has held a single Deepgram key, and that key has paid for speech-to-text, the LLM, and text-to-speech alike. Step 6 let you swap `gpt-4o-mini` for `gpt-4o` without so much as an OpenAI account.
 

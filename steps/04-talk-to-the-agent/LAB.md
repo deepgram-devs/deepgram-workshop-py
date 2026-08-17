@@ -18,7 +18,7 @@ Press **Connect**. The greeting plays, the level meter moves when you talk (the 
 
 This is the step where it becomes a voice agent.
 
-## The mental model
+## How it works
 
 The microphone lives in the browser and has been open since you pressed Connect. It just has no instruction to do anything with what it captures.
 

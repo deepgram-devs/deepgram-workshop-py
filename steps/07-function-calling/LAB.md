@@ -18,7 +18,7 @@ You have a complete voice agent. Tell it you're calling about your bank account 
 
 By the end of it you'll have a phone banking agent for Contoso Bank that looks up real balances and reads back real transactions. Banking is the scenario because it punishes vagueness: a support bot that paraphrases is annoying, a banking bot that paraphrases is a problem. Every rule you write here transfers to whatever domain you actually work in.
 
-## The mental model
+## How it works
 
 Function calling connects the agent to things the model can't know: your database, your API, the current time, the user's order history. The flow has four hops.
 

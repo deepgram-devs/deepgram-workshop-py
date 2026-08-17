@@ -22,7 +22,7 @@ Step 7 built a banking agent. This is a clinic scheduling agent for Lakeside Fam
 
 Everything you wrote in Step 7 ships already written here: `handle_function_call`, the dispatch branch, the `FUNCTIONS` declaration. That's the point. Once the plumbing exists, a new vertical is a prompt, a vocabulary, and a handler. Three TODOs.
 
-## The mental model
+## How it works
 
 Two things change between verticals, and neither of them is code you haven't seen.
 

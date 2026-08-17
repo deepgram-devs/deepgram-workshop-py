@@ -18,7 +18,7 @@ Press **Connect**. Everything from Step 2 works: the agent connects, applies set
 
 This step gives those audio frames somewhere to go.
 
-## The mental model
+## How it works
 
 Deepgram sends TTS audio as raw PCM frames matching the `output` format you declared in `SETTINGS`: 24 kHz, mono, signed 16-bit. No container, no header, no decoding; the bytes off the socket are already playable samples.
 

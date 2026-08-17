@@ -18,7 +18,7 @@ Your agent is finished. It listens, thinks, speaks, yields the floor when you in
 
 This step is dials rather than code, and it's the step that decides whether people enjoy talking to what you built.
 
-## The mental model
+## How it works
 
 Two constants have been sitting in every `main.py` since Step 2:
 

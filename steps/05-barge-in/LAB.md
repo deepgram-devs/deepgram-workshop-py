@@ -23,7 +23,7 @@ Sit with that for a second, because that gap is the entire step.
 > **⏸ Pause: check in with the instructor**
 > Do this part together. Everyone should hear the agent talk over them at least once before writing the fix, because the bug is far more memorable than the patch.
 
-## The mental model
+## How it works
 
 `UserStartedSpeaking` arrives only after the server has already done its part. Flux detected start-of-turn inside the model. The agent stopped generating. The server stopped sending audio.
 

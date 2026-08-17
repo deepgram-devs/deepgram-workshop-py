@@ -18,7 +18,7 @@ Everything works: it hears you, answers you, and pauses when you talk over it. I
 
 This step has the least code in the workshop and the most to play with.
 
-## The mental model
+## How it works
 
 Three settings define the agent's character, and they're independent of each other:
 

@@ -20,7 +20,7 @@ A page opens with a **Connect** button. Press it and you get `>> Connection open
 
 You'll continue by adding the orchestration that happens after the handshake is finished.
 
-## The mental model
+## How it works
 
 A traditional voice pipeline means three services and the glue between them: speech-to-text, an LLM, text-to-speech. You own the orchestration, the buffering, and every millisecond of latency between the hops.
 
