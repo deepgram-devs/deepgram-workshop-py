@@ -20,6 +20,8 @@ Audio comes in, audio goes out, and a model in the middle decides what to say. E
 
 **Text-to-speech (TTS)** turns the reply back into audio. We use **Flux TTS**, Deepgram's streaming voice engine built for conversation.
 
+> **Those speech models don't have to run on Deepgram's infrastructure.** Flux, Nova-3, and Aura-2 are on AWS Marketplace and [deploy to Amazon SageMaker endpoints](https://developers.deepgram.com/docs/deploy-amazon-sagemaker) in your own AWS account and VPC, which is the answer when audio can't leave your infrastructure at all. Worth knowing about; it isn't what this workshop does. Everything here runs on the hosted Voice Agent API, and that's a different path — SageMaker's network isolation blocks the outbound LLM calls the orchestrator depends on, so the Agent API itself doesn't run there.
+
 > **Check yourself:** What are the three building blocks of a voice agent, and which one holds the conversation history?
 
 ## The Voice Agent API does the orchestration

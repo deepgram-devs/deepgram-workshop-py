@@ -154,6 +154,8 @@ def think_settings() -> ThinkSettingsV1:
 
 Try the other half of the idea. Leave `provider` set to `open_ai` and point `endpoint` at an OpenAI-compatible gateway of your own: a local server, a proxy that logs every completion, a router across several models. That's `think.endpoint` doing the thing it's actually for, and it's how you'd put a Bedrock Agent, request logging, or a header rewrite in front of the model.
 
+> **The speech half can move into your account too.** Flux, Nova-3, and Aura-2 are on AWS Marketplace and [deploy to Amazon SageMaker endpoints](https://developers.deepgram.com/docs/deploy-amazon-sagemaker) in your own VPC. That's a different architecture rather than a different setting, though: SageMaker's network isolation blocks outbound LLM calls, which is exactly why the Voice Agent API can't run there. You'd call transcription, your model, and synthesis yourself instead of configuring one socket. Nothing to do here — just know the option exists when the audio is the part that can't leave.
+
 ---
 
 Your agent's brain can now live wherever you need it to. Back to the main line. What it still can't do is anything outside its own head.
