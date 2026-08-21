@@ -64,7 +64,8 @@ Add the `DEEPGRAM_REGION` line to the pre-event email if attendees will clone th
 ## The slide deck
 
 [slides/deepgram-voice-agent-workshop.pptx](slides/deepgram-voice-agent-workshop.pptx) is a
-PowerPoint-compatible projection deck that mirrors the run of show below.
+PowerPoint-compatible projection deck that mirrors the run of show below. Thirty-seven slides,
+16:9, no embedded fonts, so it opens the same in PowerPoint, Keynote, and Google Slides.
 
 **The slides are a visual aid for the room, not a talk.** You do not need to read through them
 or present each one before the workshop starts. Most of them exist to be left on screen while
@@ -76,28 +77,37 @@ How the deck is laid out:
 
 | Slides | What they are |
 |---|---|
-| 1 to 6 | Title, what they'll build, prerequisites, the two tracks, and this run of show |
-| 7 to 13 | Step 0. The only block you actually present |
-| 14 to 23 | Steps 1 to 5, one gate slide each, plus the break |
-| 24 to 29 | Steps 6 to 8 |
-| 30 to 33 | Wrap, where to go next, links |
-| 34 to 37 | Appendix: the five failures, the check-yourself answers, and regions. Not part of the run; jump to them when the room needs them |
+| 1 to 5 | Title, what they'll build, prerequisites, the two tracks, and this run of show |
+| 6 to 11 | Step 0. The only block you actually present, and the only one capped by the clock |
+| 12 to 20 | Steps 1 to 5, a gate slide each plus a teaching slide where the step earns one, and the break |
+| 21 to 26 | Steps 6 to 8 |
+| 27 to 30 | Wrap, the two take-homes, where to go next, links |
+| 31 to 37 | Appendix: the five failures, the check-yourself answers, Steps 6b and 7b, and regions. Not part of the run; jump to them when the room needs them |
 
-Each step gate slide carries the step number, its clock time, its duration, and the matching Easy
-Mode lab, so a mixed room can read its position off the screen without asking. The amber **pause**
-marker on a slide is the same sync point marked in that step's `LAB.md`, and that is the one thing on
-the slide you should say out loud.
+Each step gate slide carries the step number, its clock time, its duration, the command to run, and
+the matching Easy Mode lab, so a mixed room can read its position off the screen without asking. A
+rail of eight ticks along the bottom says which step of eight is in progress. The amber **pause** bar
+is the same sync point marked in that step's `LAB.md`, and that bar is the one thing on the slide you
+should say out loud. Amber means only that; nothing else on the deck uses it.
 
 Every slide has speaker notes with the things worth saying, the failures to watch for, and the
 check-yourself answer for that step. They are for you during the session; they are not a script,
 and nothing in them needs covering up front.
 
-Slide 33 is sized to hold QR codes and doesn't ship with them. Generate six from the links table
+Slide 30 is sized to hold QR codes and doesn't ship with them. Generate six from the links table
 at the end of this file and drop them in if you're presenting to a conference floor, where nobody
 will type a URL.
 
-The deck is generated from a script rather than hand-edited. If you change a step's timing or its
-sync point here, change it on that step's slide too.
+The deck is generated rather than hand-edited, so a timing change here can be made in one place and
+stay true on the screen:
+
+```bash
+uv run scripts/build_slides.py
+```
+
+That overwrites `slides/deepgram-voice-agent-workshop.pptx`. The run of show below lives in a table
+at the top of `scripts/build_slides.py` as well; if you change a step's clock time, duration, or sync
+point here, change it there too and regenerate.
 
 ## Run of show
 
