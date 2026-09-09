@@ -46,10 +46,13 @@ from deepgram.types.think_settings_v1 import ThinkSettingsV1
 #: ---- TODO (Step 6b.1b): Uncomment -- think.endpoint, the URL Deepgram calls.
 # from deepgram.types.think_settings_v1endpoint import ThinkSettingsV1Endpoint
 #:
-#: ---- TODO (Step 6b.1c): Add ThinkSettingsV1Provider_AwsBedrock to the import
-#: below, alongside the OpenAI provider the fallback uses. They come from the
-#: same module, so it becomes a parenthesized import over several lines.
-from deepgram.types.think_settings_v1provider import ThinkSettingsV1Provider_OpenAi
+#: ---- TODO (Step 6b.1c): Uncomment -- the Bedrock provider, alongside the
+#: OpenAI provider the fallback uses. Same module, so it is one name inside the
+#: parenthesized import below.
+from deepgram.types.think_settings_v1provider import (
+    # ThinkSettingsV1Provider_AwsBedrock,
+    ThinkSettingsV1Provider_OpenAi,
+)
 from dotenv import load_dotenv
 
 from web import AgentHandle, Player, bridge
@@ -118,14 +121,17 @@ def think_settings() -> ThinkSettingsV1:
     #: Everything Bedrock-specific goes in this space, above the fallback return.
     #: Open with the guard, and keep it whatever else you change -- it is what
     #: lets the person next to you, who never got model access approved, run your
-    #: file:
+    #: file. Inside it, build the credentials as a plain dict:
     #:
     # if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-    #:
-    #: Inside it, build the credentials as a plain dict: a "type" of "sts" when
-    #: AWS_SESSION_TOKEN is set and "iam" when it is not, plus "region",
-    #: "access_key_id" and "secret_access_key" from the constants above. Then add
-    #: "session_token" under an if, only when there is one.
+    #     credentials = {
+    #         "type": "sts" if AWS_SESSION_TOKEN else "iam",
+    #         "region": AWS_REGION,
+    #         "access_key_id": AWS_ACCESS_KEY_ID,
+    #         "secret_access_key": AWS_SECRET_ACCESS_KEY,
+    #     }
+    #     if AWS_SESSION_TOKEN:
+    #         credentials["session_token"] = AWS_SESSION_TOKEN
     #:
     #: The dict is not stylistic. session_token has to be *absent* rather than
     #: None for long-lived IAM keys: the SDK serializes any field you pass
@@ -136,17 +142,30 @@ def think_settings() -> ThinkSettingsV1:
     #: ---- TODO (Step 6b.3): Return the Bedrock settings -------------------
     #: Still inside the guard, return a ThinkSettingsV1 carrying three things.
     #: provider and endpoint are two halves of one setting and Bedrock needs both
-    #: -- miss either and the handshake fails.
+    #: -- miss either and the handshake fails:
     #:
-    #:   provider=ThinkSettingsV1Provider_AwsBedrock(...)
-    #:     type="aws_bedrock", model=BEDROCK_MODEL, temperature=0.7, and
-    #:     credentials=AwsBedrockThinkProviderCredentials(**credentials).
-    #:     Those credentials travel in the Settings message, over the WebSocket,
-    #:     to Deepgram -- that is what "Deepgram calls Bedrock as you" means, and
-    #:     why the IAM user wants scoping to
+        # return ThinkSettingsV1(
+        #     provider=ThinkSettingsV1Provider_AwsBedrock(
+        #         type="aws_bedrock",
+        #         model=BEDROCK_MODEL,
+        #         temperature=0.7,
+        #         credentials=AwsBedrockThinkProviderCredentials(**credentials),
+        #     ),
+        #     endpoint=ThinkSettingsV1Endpoint(
+        #         url=f"https://bedrock-runtime.{AWS_REGION}.amazonaws.com/",
+        #     ),
+        #     prompt=PROMPT,
+        # )
+    #:
+    #: What each of the three is doing:
+    #:
+    #:   provider
+    #:     The credentials you just built travel in the Settings message, over
+    #:     the WebSocket, to Deepgram -- that is what "Deepgram calls Bedrock as
+    #:     you" means, and why the IAM user wants scoping to
     #:     bedrock:InvokeModelWithResponseStream on the one model ARN you use.
     #:
-    #:   endpoint=ThinkSettingsV1Endpoint(url=...)
+    #:   endpoint
     #:     Bedrock's runtime URL: https://bedrock-runtime.{region}.amazonaws.com/
     #:     Interpolate AWS_REGION rather than typing a region in. It has to match
     #:     the region in the credentials, and that mismatch is the second most
@@ -157,7 +176,7 @@ def think_settings() -> ThinkSettingsV1:
     #:     Completions format -- a self-hosted model, a gateway in front of your
     #:     own inference, a router -- and the agent talks to it.
     #:
-    #:   prompt=PROMPT
+    #:   prompt
     #:     The same prompt the fallback uses, so the only thing that changes
     #:     between the branches is who runs the model. Drop it and the agent
     #:     loses the instruction that stops it reading markdown aloud.
