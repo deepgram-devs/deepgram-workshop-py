@@ -11,3 +11,4 @@ __pycache__/
 # uv
 .venv/
 talk-track.md
+.DS_Store
